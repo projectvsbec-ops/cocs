@@ -9,6 +9,7 @@ import MyTasksPage from './pages/MyTasksPage'
 import VerifyPage from './pages/VerifyPage'
 import DashboardPage from './pages/DashboardPage'
 import AuditPage from './pages/AuditPage'
+import LocationsManagementPage from './pages/LocationsManagementPage'
 
 function ProtectedRoute({ children, roles }) {
   const { user, loading } = useAuth()
@@ -53,6 +54,10 @@ export default function App() {
 
         <Route path="/audit/new" element={
           <ProtectedRoute roles={['Admin']}><AuditPage /></ProtectedRoute>
+        } />
+
+        <Route path="/admin/locations" element={
+          <ProtectedRoute roles={['Admin']}><LocationsManagementPage /></ProtectedRoute>
         } />
 
         <Route path="*" element={<Navigate to="/" replace />} />
