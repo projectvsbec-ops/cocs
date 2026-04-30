@@ -1,0 +1,302 @@
+@import "tailwindcss";
+
+/* ── RESET & MOBILE FOUNDATION ─────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+html {
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;   /* prevent iOS font inflation */
+  text-size-adjust: 100%;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background-color: #f0f4ff;
+  color: #1e293b;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  min-height: 100dvh;               /* dynamic viewport height – handles mobile chrome bar */
+  overflow-x: hidden;
+}
+
+:root {
+  --primary: #2563eb;
+  --primary-dark: #1d4ed8;
+  --success: #16a34a;
+  --warning: #d97706;
+  --danger: #dc2626;
+  --bg: #f0f4ff;
+  --card: #ffffff;
+  --text: #1e293b;
+  --muted: #64748b;
+  --border: #e2e8f0;
+  --navbar-h: 60px;
+  --bottom-nav-h: 64px;
+  /* Safe area for notched phones (iPhone X+) */
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-top: env(safe-area-inset-top, 0px);
+}
+
+/* Smooth transitions on interactive elements only (not layout) */
+button, a, input, select, textarea {
+  transition: background-color 0.15s ease, border-color 0.15s ease,
+              box-shadow 0.15s ease, transform 0.1s ease, opacity 0.15s ease;
+}
+
+/* Remove tap delay on mobile */
+button, a {
+  touch-action: manipulation;
+}
+
+/* ── PREMIUM AESTHETICS ────────────────────────────────── */
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.card {
+  background: var(--card);
+  border-radius: 20px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+}
+@media (max-width: 400px) {
+  .stat-value {
+    font-size: 1.5rem;
+  }
+}
+
+/* ── BUTTONS ───────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 52px;           /* WCAG AA touch target */
+  padding: 12px 20px;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  outline: none;
+  width: 100%;
+  text-decoration: none;
+  user-select: none;
+  -webkit-user-select: none;
+  white-space: nowrap;
+}
+.btn:active  { transform: scale(0.97); }
+.btn:disabled { opacity: 0.6; pointer-events: none; }
+
+.btn-primary { background: var(--primary); color: white; }
+.btn-primary:hover  { background: var(--primary-dark); }
+
+.btn-success { background: #dcfce7; color: var(--success); border: 2px solid #bbf7d0; }
+.btn-success:hover  { background: #bbf7d0; }
+
+.btn-danger  { background: #fee2e2; color: var(--danger);  border: 2px solid #fecaca; }
+.btn-danger:hover   { background: #fecaca; }
+
+.btn-outline { background: white; color: var(--primary); border: 2px solid var(--primary); }
+.btn-outline:hover  { background: #eff6ff; }
+
+/* ── FORM ELEMENTS ─────────────────────────────────────── */
+.form-label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--muted);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.form-input {
+  width: 100%;
+  min-height: 52px;
+  padding: 12px 14px;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  font-size: 1rem;              /* ≥16px prevents iOS zoom-on-focus */
+  font-family: inherit;
+  color: var(--text);
+  background: white;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.form-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+/* Prevent iOS default styling on selects */
+select.form-input {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 40px;
+}
+textarea.form-input {
+  min-height: auto;
+  resize: vertical;
+}
+
+/* ── STATUS BADGES ─────────────────────────────────────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.badge-green  { background: #dcfce7; color: #15803d; }
+.badge-yellow { background: #fef9c3; color: #b45309; }
+.badge-red    { background: #fee2e2; color: #b91c1c; }
+.badge-blue   { background: #dbeafe; color: #1d4ed8; }
+.badge-gray   { background: #f1f5f9; color: #475569; }
+/* Grid helpers for button groups */
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.grid-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+@media (max-width: 380px) {
+  .grid-3 {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 320px) {
+  .grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── PAGE WRAPPER ──────────────────────────────────────── */
+.page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 16px 16px;
+  /* Space for sticky navbar + bottom tab bar + phone safe area */
+  padding-top: 20px;
+  padding-bottom: calc(var(--bottom-nav-h) + var(--safe-bottom) + 24px);
+}
+
+/* On wider screens, give more breathing room */
+@media (min-width: 640px) {
+  .page {
+    padding: 24px 24px calc(var(--bottom-nav-h) + 32px);
+  }
+}
+
+/* ── NAVBAR ────────────────────────────────────────────── */
+.navbar-top {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  height: var(--navbar-h);
+  background: white;
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  /* Account for phone notch */
+  padding-top: var(--safe-top);
+}
+
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 98;
+  background: white;
+  border-top: 1px solid var(--border);
+  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.06);
+  /* Pad for home-bar on iPhone */
+  padding-bottom: var(--safe-bottom);
+  height: calc(var(--bottom-nav-h) + var(--safe-bottom));
+}
+
+/* ── ANIMATIONS ────────────────────────────────────────── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-in { animation: fadeIn 0.22s ease forwards; }
+
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position:  400px 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+  background-size: 400px 100%;
+  animation: shimmer 1.3s infinite;
+  border-radius: 10px;
+}
+
+/* ── UTILITIES ─────────────────────────────────────────── */
+/* Prevent text from overflowing cards */
+.truncate-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Image that fills its container without distortion */
+.img-cover {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Full-height overlay (modal backdrops etc.) */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+/* Grid helper for 2-column home cards */
+.card-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+@media (max-width: 360px) {
+  /* Very small phones: single column */
+  .card-grid {
+    grid-template-columns: 1fr;
+  }
+}
