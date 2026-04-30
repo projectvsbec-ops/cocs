@@ -14,25 +14,71 @@ const WORK_TYPES = [
 export default function WorkUpdatePage() {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const [departments, setDepartments] = useState([])
   const [locations, setLocations] = useState([])
-  const [form, setForm] = useState({ location_id: '', work_type: '', status: '', notes: '' })
+  const [form, setForm] = useState({ 
+    department_id: '', 
+    location_id: '', 
+    work_type: '', 
+    status: '', 
+    notes: '' 
+  })
   const [photo, setPhoto] = useState(null)
   const [preview, setPreview] = useState(null)
   const [loading, setLoading] = useState(false)
 
+  // Initialize department_id when user is loaded (only if not already set)
   useEffect(() => {
-    if (user?.department_id) {
-      supabase
-        .from('locations')
-        .select('*')
-        .eq('department_id', user.department_id)
-        .order('name')
-        .then(({ data, error }) => {
-          if (error) toast.error('Could not load locations')
-          else setLocations(data)
-        })
+    if (user?.department_id && !form.department_id) {
+      setForm(prev => ({ ...prev, department_id: user.department_id }))
     }
-  }, [user])
+  }, [user?.department_id])
+
+  // Fetch departments for admins
+  useEffect(() => {
+    async function fetchDepartments() {
+      if (user?.role === 'Admin') {
+        const { data, error } = await supabase
+          .from('departments')
+          .select('*')
+          .order('name')
+        
+        if (error) {
+          console.error('Error fetching departments:', error)
+          toast.error('Failed to load departments')
+        } else {
+          setDepartments(data || [])
+        }
+      }
+    }
+    fetchDepartments()
+  }, [user?.role])
+
+  // Fetch locations based on selected department
+  useEffect(() => {
+    const deptId = form.department_id || user?.department_id
+    
+    async function fetchLocations() {
+      if (deptId) {
+        const { data, error } = await supabase
+          .from('locations')
+          .select('*')
+          .eq('department_id', deptId)
+          .order('name')
+
+        if (error) {
+          console.error('Error fetching locations:', error)
+          toast.error('Could not load locations')
+        } else {
+          setLocations(data || [])
+        }
+      } else {
+        setLocations([])
+      }
+    }
+    
+    fetchLocations()
+  }, [form.department_id, user?.department_id])
 
   const handlePhoto = (e) => {
     const file = e.target.files[0]
@@ -44,6 +90,7 @@ export default function WorkUpdatePage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (!form.department_id && !user?.department_id) { toast.error('Please select a department'); return }
     if (!form.location_id) { toast.error('Please select a location'); return }
     if (!form.work_type) { toast.error('Please select a work type'); return }
     if (!form.status) { toast.error('Please select a status'); return }
@@ -72,7 +119,7 @@ export default function WorkUpdatePage() {
         .from('work_updates')
         .insert([{
           user_id: user.id,
-          department_id: user.department_id,
+          department_id: form.department_id || user.department_id,
           location_id: form.location_id,
           work_type: form.work_type,
           status: form.status,
@@ -117,15 +164,24 @@ export default function WorkUpdatePage() {
 
       <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:'20px' }}>
 
-        {/* Department (auto-filled) */}
+        {/* Department */}
         <div className="card" style={{ padding:'16px' }}>
-          <label className="form-label">Department</label>
-          <div style={{
-            padding:'14px 16px', background:'#f8fafc', borderRadius:'12px',
-            fontWeight:600, color:'#475569', border:'2px solid #e2e8f0'
-          }}>
-            🏢 {user?.department_name || 'All Departments'}
-          </div>
+          <label className="form-label">🏢 Department *</label>
+          {user?.role === 'Admin' ? (
+            <select className="form-input"
+              value={form.department_id}
+              onChange={e => setForm({ ...form, department_id: e.target.value, location_id: '' })}>
+              <option value="">-- Select Department --</option>
+              {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+            </select>
+          ) : (
+            <div style={{
+              padding:'14px 16px', background:'#f8fafc', borderRadius:'12px',
+              fontWeight:600, color:'#475569', border:'2px solid #e2e8f0'
+            }}>
+              {user?.department_name || 'My Department'}
+            </div>
+          )}
         </div>
 
         {/* Location */}
