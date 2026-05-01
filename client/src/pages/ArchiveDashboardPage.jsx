@@ -62,46 +62,84 @@ export default function ArchiveDashboardPage() {
         throw new Error('No "cold" data found to archive.')
       }
 
-      // 2. Process Photos
-      const photoFolder = zip.folder('photos')
-      const photoPromises = workUpdates
+      // 2. Create Hierarchical Folders
+      const workFolder = zip.folder('Operations_Work')
+      const issuesFolder = zip.folder('Maintenance_Issues')
+      const auditsFolder = zip.folder('Institutional_Audits')
+      const logsFolder = zip.folder('Security_Logs')
+      
+      const workPhotos = workFolder.folder('Work_Photos')
+      const issuePhotos = issuesFolder.folder('Issue_Photos')
+
+      // 3. Process Operations Work (with solver/reviewer details)
+      const workReport = workUpdates.map(w => ({
+        id: w.id,
+        created_at: w.created_at,
+        closed_at: w.last_transition_at || w.updated_at,
+        type: w.work_type,
+        location: w.locations?.name || 'Global',
+        department: w.departments?.name || 'N/A',
+        submitted_by: w.user?.name || 'Unknown',
+        verified_by: w.reviewer?.name || 'Pending/N/A',
+        claim_status: w.claim_status,
+        workflow_status: w.workflow_status,
+        admin_feedback: w.verify_comment || 'No feedback',
+        notes: w.notes,
+        photo_filename: w.photo_url ? `work_${w.id.substring(0, 8)}.jpg` : 'None'
+      }))
+
+      const workPhotoPromises = workUpdates
         .filter(w => w.photo_url)
         .map(async (w) => {
           try {
             const resp = await fetch(w.photo_url)
-            if (!resp.ok) return
-            const blob = await resp.blob()
-            const ext = w.photo_url.split('.').pop().split('?')[0] || 'jpg'
-            const photoName = `work_${w.id.substring(0, 8)}.${ext}`
-            photoFolder.file(photoName, blob)
-            w.local_photo_path = `photos/${photoName}`
-          } catch (e) {
-            console.warn('Failed to fetch photo:', w.photo_url)
-          }
+            if (resp.ok) {
+              const blob = await resp.blob()
+              const ext = w.photo_url.split('.').pop().split('?')[0] || 'jpg'
+              workPhotos.file(`work_${w.id.substring(0, 8)}.${ext}`, blob)
+            }
+          } catch (e) {}
         })
 
-      await Promise.all(photoPromises)
+      // 4. Process Maintenance Issues
+      const issueReport = issues.map(i => ({
+        id: i.id,
+        reported_at: i.created_at,
+        resolved_at: i.updated_at,
+        type: i.issue_type,
+        priority: i.priority,
+        location: i.locations?.name || 'Global',
+        reported_by: i.reporter?.name || 'Unknown',
+        assigned_to: i.assignee?.name || 'Unassigned',
+        lifecycle_status: i.lifecycle_status,
+        description: i.description,
+        resolution_notes: i.resolution_notes || 'N/A'
+      }))
 
-      // 3. Add Data Files to ZIP
-      zip.file('work_updates.json', JSON.stringify(workUpdates, null, 2))
-      zip.file('issues.json', JSON.stringify(issues, null, 2))
-      zip.file('audits.json', JSON.stringify(audits, null, 2))
+      // 5. Build Final ZIP
+      await Promise.all(workPhotoPromises)
+
+      zip.file('Archive_Metadata.json', JSON.stringify({
+        generated_by: user.name,
+        role: user.role,
+        timestamp: new Date().toISOString(),
+        record_counts: { work: workUpdates.length, issues: issues.length, audits: audits.length, logs: logs.length }
+      }, null, 2))
+
+      workFolder.file('Work_Master_Report.json', JSON.stringify(workReport, null, 2))
+      issuesFolder.file('Issues_Master_Report.json', JSON.stringify(issueReport, null, 2))
+      auditsFolder.file('Audits_Master_Report.json', JSON.stringify(audits, null, 2))
       
-      const logCsv = ['id,user_name,action_type,entity_type,detail,created_at', ...logs.map(l => 
-        `${l.id},"${l.user?.name || 'Unknown'}",${l.action_type},${l.entity_type},"${l.detail.replace(/"/g, '""')}",${l.created_at}`
+      const logCsv = ['Timestamp,User,Action,Entity,Details', ...logs.map(l => 
+        `"${l.created_at}","${l.user?.name || 'System'}","${l.action_type}","${l.entity_type}","${l.detail.replace(/"/g, '""')}"`
       )].join('\n')
-      zip.file('activity_logs.csv', logCsv)
+      logsFolder.file('System_Activity_Trace.csv', logCsv)
 
       const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' })
-      const fileName = `COCS_Full_Archive_${new Date().toISOString().split('T')[0]}.zip`
+      const fileName = `COCS_Audit_Backup_${new Date().toISOString().split('T')[0]}.zip`
       
-      const counts = { 
-        work: workUpdates.length, 
-        issues: issues.length, 
-        audits: audits.length, 
-        logs: logs.length, 
-        photos: photoPromises.length 
-      }
+      const counts = { work: workUpdates.length, issues: issues.length, audits: audits.length, logs: logs.length, photos: workUpdates.filter(w=>w.photo_url).length }
+
 
       const { error: logErr } = await supabase.from('archive_logs').insert([{
         file_name: fileName,
@@ -125,7 +163,7 @@ export default function ArchiveDashboardPage() {
 
   const handleDownload = async (archive) => {
     setArchiving(true)
-    const toastId = toast.loading('Re-preparing full download (including photos)...')
+    const toastId = toast.loading('Re-preparing production backup (including folders & photos)...')
     
     try {
       const JSZip = (await loadJSZip()).default
@@ -143,8 +181,16 @@ export default function ArchiveDashboardPage() {
       ])
 
       const workUpdates = wRes.data || []
-      const photoFolder = zip.folder('photos')
-      const photoPromises = workUpdates
+      const workFolder = zip.folder('Operations_Work')
+      const workPhotos = workFolder.folder('Work_Photos')
+      
+      const workReport = workUpdates.map(w => ({
+        id: w.id, created_at: w.created_at, type: w.work_type, location: w.locations?.name || 'Global',
+        submitted_by: w.user?.name || 'Unknown', verified_by: w.reviewer?.name || 'N/A',
+        workflow_status: w.workflow_status, admin_feedback: w.verify_comment || 'No feedback'
+      }))
+
+      const workPhotoPromises = workUpdates
         .filter(w => w.photo_url)
         .map(async (w) => {
           try {
@@ -152,15 +198,15 @@ export default function ArchiveDashboardPage() {
             if (resp.ok) {
               const blob = await resp.blob()
               const ext = w.photo_url.split('.').pop().split('?')[0] || 'jpg'
-              photoFolder.file(`work_${w.id.substring(0, 8)}.${ext}`, blob)
+              workPhotos.file(`work_${w.id.substring(0, 8)}.${ext}`, blob)
             }
           } catch (e) {}
         })
-      await Promise.all(photoPromises)
 
-      zip.file('work_updates.json', JSON.stringify(workUpdates, null, 2))
-      zip.file('issues.json', JSON.stringify(iRes.data || [], null, 2))
-      zip.file('audits.json', JSON.stringify(aRes.data || [], null, 2))
+      await Promise.all(workPhotoPromises)
+      workFolder.file('Work_Master_Report.json', JSON.stringify(workReport, null, 2))
+      zip.folder('Maintenance_Issues').file('Issues_Master_Report.json', JSON.stringify(iRes.data || [], null, 2))
+      zip.folder('Institutional_Audits').file('Audit_Master_Report.json', JSON.stringify(aRes.data || [], null, 2))
       
       const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' })
       saveAs(blob, archive.file_name)
