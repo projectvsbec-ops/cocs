@@ -23,6 +23,20 @@ ADD COLUMN resolved_at timestamptz,
 ADD COLUMN closed_at timestamptz;
 
 -- SLA Trigger Function
+CREATE OR REPLACE FUNCTION public.handle_new_user() 
+RETURNS trigger AS $$
+BEGIN
+  INSERT INTO public.profiles (id, name, email, role)
+  VALUES (
+    new.id, 
+    COALESCE(new.raw_user_meta_data->>'name', 'User'), 
+    new.email, 
+    COALESCE(new.raw_user_meta_data->>'role', 'Manager')
+  );
+  RETURN new;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 CREATE OR REPLACE FUNCTION public.calculate_issue_sla() 
 RETURNS trigger AS $$
 BEGIN
