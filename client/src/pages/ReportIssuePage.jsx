@@ -21,18 +21,24 @@ export default function ReportIssuePage() {
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    supabase.from('locations').select('*').order('name').then(({ data }) => {
-      const uniqueLocs = []
-      const seen = new Set()
-      for (const loc of (data || [])) {
-        if (!seen.has(loc.name)) {
-          seen.add(loc.name)
-          uniqueLocs.push(loc)
-        }
+    if (user) {
+      let query = supabase.from('locations').select('*').order('name')
+      if (user.role === 'Manager' && user.department_id) {
+        query = query.or(`department_id.eq.${user.department_id},department_id.is.null`)
       }
-      setLocations(uniqueLocs)
-    })
-  }, [])
+      query.then(({ data }) => {
+        const uniqueLocs = []
+        const seen = new Set()
+        for (const loc of (data || [])) {
+          if (!seen.has(loc.name)) {
+            seen.add(loc.name)
+            uniqueLocs.push(loc)
+          }
+        }
+        setLocations(uniqueLocs)
+      })
+    }
+  }, [user])
 
   const handlePhoto = (e) => {
     const file = e.target.files[0]

@@ -30,17 +30,14 @@ export default function WorkUpdatePage() {
   const [existingRecord, setExistingRecord] = useState(null)
 
   useEffect(() => {
-    supabase.from('locations').select('*').order('name').then(({ data }) => {
-      const uniqueLocs = []
-      const seen = new Set()
-      for (const loc of (data || [])) {
-        if (!seen.has(loc.name)) {
-          seen.add(loc.name)
-          uniqueLocs.push(loc)
-        }
+    if (user) {
+      let query = supabase.from('locations').select('*').order('name')
+      // Show locations belonging to user's department OR global locations (null department)
+      if (user.role === 'Manager' && user.department_id) {
+        query = query.or(`department_id.eq.${user.department_id},department_id.is.null`)
       }
-      setLocations(uniqueLocs)
-    })
+      query.then(({ data }) => setLocations(data || []))
+    }
 
     if (id) {
       loadExistingRecord()
