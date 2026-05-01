@@ -36,7 +36,7 @@ export default function LoginPage() {
       padding: '24px',
     }}>
       {/* Logo */}
-      <div style={{ textAlign:'center', marginBottom:'32px' }} className="fade-in">
+      <div style={{ textAlign: 'center', marginBottom: '32px' }} className="fade-in">
         <div style={{
           width: 80, height: 80, borderRadius: '24px',
           background: 'rgba(255,255,255,0.2)',
@@ -45,18 +45,18 @@ export default function LoginPage() {
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           margin: '0 auto 16px', fontSize: '2rem', fontWeight: 900, color: 'white'
         }}>CO</div>
-        <h1 style={{ color:'white', fontSize:'1.8rem', fontWeight:800, margin:0 }}>COCS</h1>
-        <p style={{ color:'rgba(255,255,255,0.75)', margin:'6px 0 0', fontSize:'0.9rem' }}>
+        <h1 style={{ color: 'white', fontSize: '1.8rem', fontWeight: 800, margin: 0 }}>COCS</h1>
+        <p style={{ color: 'rgba(255,255,255,0.75)', margin: '6px 0 0', fontSize: '0.9rem' }}>
           Campus Operations Control System
         </p>
       </div>
 
       {/* Login Card */}
-      <div className="card glass fade-in" style={{ width:'100%', maxWidth:'420px', padding:'32px', boxShadow: '0 20px 40px rgba(0,0,0,0.1)' }}>
-        <h2 style={{ margin:'0 0 8px', fontSize:'1.4rem', fontWeight:700 }}>Sign In</h2>
-        <p style={{ margin:'0 0 24px', color:'#64748b', fontSize:'0.9rem' }}>Use your college email to login</p>
+      <div className="card glass fade-in" style={{ width: '100%', maxWidth: '420px', padding: '32px', boxShadow: '0 20px 40px rgba(0,0,0,0.1)' }}>
+        <h2 style={{ margin: '0 0 8px', fontSize: '1.4rem', fontWeight: 700 }}>Sign In</h2>
+        <p style={{ margin: '0 0 24px', color: '#64748b', fontSize: '0.9rem' }}>Use your college email to login</p>
 
-        <form onSubmit={handleLogin} style={{ display:'flex', flexDirection:'column', gap:'16px' }}>
+        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div>
             <label className="form-label">Email Address</label>
             <input
@@ -71,7 +71,7 @@ export default function LoginPage() {
           </div>
           <div>
             <label className="form-label">Password</label>
-            <div style={{ position:'relative' }}>
+            <div style={{ position: 'relative' }}>
               <input
                 id="password-input"
                 className="form-input"
@@ -79,27 +79,27 @@ export default function LoginPage() {
                 placeholder="Enter password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                style={{ paddingRight:'48px' }}
+                style={{ paddingRight: '48px' }}
                 autoComplete="current-password"
               />
               <button type="button" onClick={() => setShowPass(!showPass)} style={{
-                position:'absolute', right:'14px', top:'50%', transform:'translateY(-50%)',
-                background:'none', border:'none', cursor:'pointer', color:'#94a3b8'
+                position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)',
+                background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8'
               }}>
                 {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
           </div>
 
-          <button id="login-btn" type="submit" className="btn btn-primary" disabled={loading} style={{ marginTop:'4px' }}>
+          <button id="login-btn" type="submit" className="btn btn-primary" disabled={loading} style={{ marginTop: '4px' }}>
             {loading ? 'Signing in…' : <><LogIn size={18} /> Sign In</>}
           </button>
         </form>
 
       </div>
 
-      <p style={{ color:'rgba(255,255,255,0.5)', marginTop:'24px', fontSize:'0.75rem' }}>
-        © 2024 Campus Operations Control System
+      <p style={{ color: 'rgba(255,255,255,0.5)', marginTop: '24px', fontSize: '0.75rem' }}>
+        © 2026 Campus Operations Control System
       </p>
     </div>
   )
