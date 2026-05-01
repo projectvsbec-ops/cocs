@@ -40,10 +40,10 @@ export default function ArchiveDashboardPage() {
     try {
       const JSZip = (await loadJSZip()).default
       const zip = new JSZip()
-      const now = new Date()
-      const sixtyDaysAgo = new Date(now.setDate(now.getDate() - 60)).toISOString()
-      const thirtyDaysAgo = new Date(now.setDate(now.getDate() - 30)).toISOString()
-      const fifteenDaysAgo = new Date(now.setDate(now.getDate() - 15)).toISOString()
+      
+      const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString()
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+      const fifteenDaysAgo = new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString()
 
       // Fetch Cold Data
       const [wRes, iRes, aRes, lRes] = await Promise.all([
@@ -127,9 +127,9 @@ export default function ArchiveDashboardPage() {
 
     const toastId = toast.loading('Executing safe deletion...')
     try {
-      const sixtyDaysAgo = new Date(new Date(archive.created_at).setDate(new Date(archive.created_at).getDate() - 60)).toISOString()
-      const thirtyDaysAgo = new Date(new Date(archive.created_at).setDate(new Date(archive.created_at).getDate() - 30)).toISOString()
-      const fifteenDaysAgo = new Date(new Date(archive.created_at).setDate(new Date(archive.created_at).getDate() - 15)).toISOString()
+      const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString()
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+      const fifteenDaysAgo = new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString()
 
       await Promise.all([
         supabase.from('work_updates').delete().eq('workflow_status', 'CLOSED').lt('created_at', sixtyDaysAgo),
