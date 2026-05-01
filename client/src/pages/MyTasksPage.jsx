@@ -24,7 +24,7 @@ function StatusBadge({ status }) {
   return <span className={`badge ${s.cls}`}>{s.label}</span>
 }
 
-function WorkCard({ item, onClaim }) {
+function WorkCard({ item, onClaim, onUpdate }) {
   const navigate = useNavigate()
   const { user } = useAuth()
   const [imgOpen, setImgOpen] = useState(false)
@@ -39,7 +39,7 @@ function WorkCard({ item, onClaim }) {
         .eq('id', id)
       if (error) throw error
       toast.success('Work submitted to Admin for verification!', { id: toastId })
-      onClaim() // Re-use the refresh callback
+      onUpdate() // Call the refresh function
     } catch (err) {
       toast.error('Submission failed', { id: toastId })
     }
@@ -213,11 +213,11 @@ export default function MyTasksPage() {
       ) : tab === 'pool' ? (
         pool.length === 0
           ? <div style={{ textAlign:'center', padding:'60px 20px', color:'#94a3b8' }}><ClipboardList size={48} style={{ opacity:0.2, margin:'0 auto 12px' }} /><p>No available tasks in the pool</p></div>
-          : pool.map(w => <WorkCard key={w.id} item={w} onClaim={handleClaim} />)
+          : pool.map(w => <WorkCard key={w.id} item={w} onClaim={handleClaim} onUpdate={load} />)
       ) : (
         myWork.length === 0
           ? <div style={{ textAlign:'center', padding:'60px 20px', color:'#94a3b8' }}><CheckCircle2 size={48} style={{ opacity:0.2, margin:'0 auto 12px' }} /><p>You haven't claimed any tasks yet</p></div>
-          : myWork.map(w => <WorkCard key={w.id} item={w} onClaim={handleClaim} />)
+          : myWork.map(w => <WorkCard key={w.id} item={w} onClaim={handleClaim} onUpdate={load} />)
       )}
     </div>
   )
