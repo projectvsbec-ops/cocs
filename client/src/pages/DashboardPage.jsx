@@ -128,7 +128,7 @@ export default function DashboardPage() {
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'20px' }}>
         <div>
           <h1 style={{ margin:0, fontSize:'1.5rem', fontWeight:800 }}>📊 Dashboard</h1>
-          <p style={{ margin:'4px 0 0', color:'#64748b', fontSize:'0.85rem' }}>Live overview of all departments</p>
+          <p style={{ margin:'4px 0 0', color:'#64748b', fontSize:'0.85rem' }}>Live overview of all department</p>
         </div>
         <button onClick={load} style={{ background:'#f1f5f9', border:'none', borderRadius:'10px', width:40, height:40, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', color:'#475569' }}>
           <RefreshCw size={18} />
@@ -183,27 +183,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Department Stats */}
-      <div className="card" style={{ padding:'18px', marginBottom:'20px' }}>
-        <h3 style={{ margin:'0 0 14px', fontSize:'1rem', fontWeight:700 }}>🏢 Department Performance</h3>
-        {deptStats.length === 0 ? (
-          <p style={{ color:'#94a3b8', fontSize:'0.85rem' }}>No data yet</p>
-        ) : deptStats.map((d, i) => (
-          <div key={i} style={{
-            display:'flex', justifyContent:'space-between', alignItems:'center',
-            padding:'10px 0', borderBottom: i < deptStats.length-1 ? '1px solid #f1f5f9' : 'none'
-          }}>
-            <div>
-              <div style={{ fontWeight:600, fontSize:'0.9rem' }}>{d.department}</div>
-              <div style={{ fontSize:'0.75rem', color:'#94a3b8' }}>{d.total_updates} updates</div>
-            </div>
-            <div style={{ textAlign:'right' }}>
-              <div style={{ fontWeight:700, color:'#16a34a', fontSize:'0.9rem' }}>✅ {d.completed || 0}</div>
-              <div style={{ fontSize:'0.72rem', color:'#94a3b8' }}>completed</div>
-            </div>
-          </div>
-        ))}
-      </div>
+
 
       {/* Recent Activity */}
       <div className="card" style={{ padding:'18px' }}>

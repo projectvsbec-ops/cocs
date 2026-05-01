@@ -65,10 +65,11 @@ export default function WorkUpdatePage() {
     if (!form.location_id) { toast.error('Please select a location'); return }
     if (!form.work_type) { toast.error('Please select a work type'); return }
     if (!form.status) { toast.error('Please select a status'); return }
-    if (!photo) { toast.error('Please take or upload a photo'); return }
 
     setLoading(true)
     try {
+    let publicUrl = null
+    if (photo) {
       // 1. Upload photo to Supabase Storage
       const fileExt = photo.name.split('.').pop()
       const fileName = `${Math.random()}.${fileExt}`
@@ -81,9 +82,11 @@ export default function WorkUpdatePage() {
       if (uploadError) throw uploadError
 
       // Get public URL
-      const { data: { publicUrl } } = supabase.storage
+      const { data: { publicUrl: url } } = supabase.storage
         .from('photos')
         .getPublicUrl(filePath)
+      publicUrl = url
+    }
 
       // 2. Insert record into database
       const { error: insertError } = await supabase
@@ -142,7 +145,7 @@ export default function WorkUpdatePage() {
             padding:'14px 16px', background:'#f8fafc', borderRadius:'12px',
             fontWeight:600, color:'#475569', border:'2px solid #e2e8f0'
           }}>
-            {user?.department_name || 'My Department'}
+            {user?.department_name || 'All Department'}
           </div>
         </div>
 
@@ -189,7 +192,7 @@ export default function WorkUpdatePage() {
 
         {/* Photo */}
         <div>
-          <label className="form-label">📷 Photo * (Mandatory)</label>
+          <label className="form-label">📷 Photo (Optional)</label>
           {preview ? (
             <div style={{ position:'relative' }}>
               <img src={preview} alt="Preview" style={{

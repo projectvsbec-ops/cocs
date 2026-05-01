@@ -25,7 +25,7 @@ function WorkCard({ item }) {
         <div>
           <div style={{ fontWeight:700, fontSize:'1rem' }}>{item.work_type}</div>
           <div style={{ color:'#64748b', fontSize:'0.82rem', marginTop:'2px' }}>
-            📍 {item.locations?.name} • {item.departments?.name}
+            📍 {item.locations?.name} • {item.departments?.name || 'All Department'}
           </div>
         </div>
         <StatusBadge status={item.status} />

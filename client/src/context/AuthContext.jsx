@@ -52,7 +52,7 @@ export function AuthProvider({ children }) {
         email: profile.email,
         role: profile.role,
         department_id: profile.department_id,
-        department_name: profile.departments?.name,
+        department_name: profile.departments?.name || 'All Department',
       });
     } catch (error) {
       console.error('Error fetching profile:', error);

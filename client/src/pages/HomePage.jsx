@@ -64,7 +64,7 @@ export default function HomePage() {
           background: 'rgba(255,255,255,0.2)', borderRadius: '999px',
           padding: '4px 12px', fontSize: '0.78rem', fontWeight: 700,
         }}>
-          {user?.role} • {user?.department_name || 'All Departments'}
+          {user?.role} • {user?.department_name || 'All Department'}
         </div>
         <div style={{ marginTop: '8px', fontSize: '0.82rem', opacity: 0.75 }}>
           📅 {new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}

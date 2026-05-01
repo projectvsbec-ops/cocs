@@ -131,6 +131,17 @@ export default function ReportIssuePage() {
 
       <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:'20px' }}>
 
+        {/* Department */}
+        <div className="card" style={{ padding:'16px' }}>
+          <label className="form-label">🏢 Department</label>
+          <div style={{
+            padding:'14px 16px', background:'#f8fafc', borderRadius:'12px',
+            fontWeight:600, color:'#475569', border:'2px solid #e2e8f0'
+          }}>
+            {user?.department_name}
+          </div>
+        </div>
+
         {/* Location */}
         <div>
           <label className="form-label">📍 Location *</label>

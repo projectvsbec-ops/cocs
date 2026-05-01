@@ -48,7 +48,7 @@ function VerifyCard({ item, onAction }) {
             👷 {item.profiles?.name}
           </div>
           <div style={{ color:'#94a3b8', fontSize:'0.78rem', marginTop:'2px' }}>
-            📍 {item.locations?.name} • {item.departments?.name}
+            📍 {item.locations?.name} • {item.departments?.name || 'All Department'}
           </div>
         </div>
         <span className={`badge ${item.status==='Completed'?'badge-green':'badge-yellow'}`}>
