@@ -12,10 +12,6 @@ export default function LoginPage() {
   const [showPass, setShowPass] = useState(false)
   const [loading, setLoading] = useState(false)
 
-  const demoAccounts = [
-    { label: '👑 Admin', email: 'admin@cocs.com' },
-    { label: '🏢 Manager', email: 'elec.mgr@cocs.com' },
-  ]
 
   const handleLogin = async (e) => {
     e.preventDefault()
@@ -100,24 +96,6 @@ export default function LoginPage() {
           </button>
         </form>
 
-        {/* Demo accounts */}
-        <div style={{ marginTop:'24px', padding:'16px', background:'#f8fafc', borderRadius:'12px', border:'1px solid #e2e8f0' }}>
-          <p style={{ margin:'0 0 10px', fontSize:'0.78rem', fontWeight:700, color:'#64748b', textTransform:'uppercase', letterSpacing:'0.05em' }}>
-            Demo Accounts (password: password123)
-          </p>
-          <div style={{ display:'flex', gap:'8px', flexWrap:'wrap' }}>
-            {demoAccounts.map(a => (
-              <button key={a.email} onClick={() => { setEmail(a.email); setPassword('password123') }}
-                style={{
-                  padding:'6px 12px', borderRadius:'8px', border:'1px solid #e2e8f0',
-                  background:'white', fontSize:'0.8rem', fontWeight:600, cursor:'pointer',
-                  color:'#475569',
-                }}>
-                {a.label}
-              </button>
-            ))}
-          </div>
-        </div>
       </div>
 
       <p style={{ color:'rgba(255,255,255,0.5)', marginTop:'24px', fontSize:'0.75rem' }}>
