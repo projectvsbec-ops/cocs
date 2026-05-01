@@ -37,7 +37,15 @@ export default function WorkUpdatePage() {
         console.error('Error fetching locations:', error)
         toast.error('Could not load locations')
       } else {
-        setLocations(data || [])
+        const uniqueLocs = []
+        const seen = new Set()
+        for (const loc of (data || [])) {
+          if (!seen.has(loc.name)) {
+            seen.add(loc.name)
+            uniqueLocs.push(loc)
+          }
+        }
+        setLocations(uniqueLocs)
       }
     }
     

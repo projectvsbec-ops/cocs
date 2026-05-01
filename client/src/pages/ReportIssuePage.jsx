@@ -21,18 +21,25 @@ export default function ReportIssuePage() {
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    if (user?.department_id) {
-      supabase
-        .from('locations')
-        .select('*')
-        .eq('department_id', user.department_id)
-        .order('name')
-        .then(({ data, error }) => {
-          if (error) toast.error('Could not load locations')
-          else setLocations(data)
-        })
-    }
-  }, [user])
+    supabase
+      .from('locations')
+      .select('*')
+      .order('name')
+      .then(({ data, error }) => {
+        if (error) toast.error('Could not load locations')
+        else {
+          const uniqueLocs = []
+          const seen = new Set()
+          for (const loc of (data || [])) {
+            if (!seen.has(loc.name)) {
+              seen.add(loc.name)
+              uniqueLocs.push(loc)
+            }
+          }
+          setLocations(uniqueLocs)
+        }
+      })
+  }, [])
 
   const handlePhoto = (e) => {
     const file = e.target.files[0]

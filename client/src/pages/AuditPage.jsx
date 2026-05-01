@@ -18,13 +18,19 @@ export default function AuditPage() {
   }, [])
 
   useEffect(() => {
-    if (form.department_id) {
-      supabase.from('locations').select('*').eq('department_id', form.department_id).order('name')
-        .then(({ data }) => setLocations(data || []))
-    } else {
-      setLocations([])
-    }
-  }, [form.department_id])
+    supabase.from('locations').select('*').order('name')
+      .then(({ data }) => {
+        const uniqueLocs = []
+        const seen = new Set()
+        for (const loc of (data || [])) {
+          if (!seen.has(loc.name)) {
+            seen.add(loc.name)
+            uniqueLocs.push(loc)
+          }
+        }
+        setLocations(uniqueLocs)
+      })
+  }, [])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -90,8 +96,7 @@ export default function AuditPage() {
           <label className="form-label">📍 Location (Optional)</label>
           <select id="audit-loc-select" className="form-input"
             value={form.location_id}
-            onChange={e => setForm({ ...form, location_id: e.target.value })}
-            disabled={!form.department_id}>
+            onChange={e => setForm({ ...form, location_id: e.target.value })}>
             <option value="">-- All Locations --</option>
             {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
           </select>
