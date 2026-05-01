@@ -150,7 +150,7 @@ export default function VerifyPage() {
       const { data, error } = await supabase
         .from('work_updates')
         .select(`*, profiles!user_id(name), locations(name)`)
-        .in('workflow_status', ['SUBMITTED', 'RESUBMITTED', 'UNDER_REVIEW'])
+        .in('workflow_status', ['SUBMITTED', 'RESUBMITTED', 'UNDER_REVIEW', 'CLAIMED'])
         .order('created_at', { ascending: false })
 
       if (error) throw error
