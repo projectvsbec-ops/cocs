@@ -47,7 +47,7 @@ export default function ArchiveDashboardPage() {
         supabase.from('work_updates').select('*, user:profiles!user_id(name), reviewer:profiles!verified_by(name), locations(name), departments(name)').eq('workflow_status', 'CLOSED').lt('created_at', thirtyDaysAgo),
         supabase.from('issues').select('*, reporter:profiles!reported_by(name), assignee:profiles!assigned_to(name), locations(name)').eq('lifecycle_status', 'CLOSED').lt('created_at', thirtyDaysAgo),
         supabase.from('audits').select('*, admin:profiles!admin_id(name)').lt('created_at', thirtyDaysAgo),
-        supabase.from('activity_log').select('*, user:profiles(name)').lt('created_at', thirtyDaysAgo)
+        supabase.from('activity_log').select('*, user:profiles(name)').or(`action_type.eq.AUDIT,created_at.lt.${thirtyDaysAgo}`)
       ])
 
       const workUpdates = wRes.data || []
@@ -144,7 +144,7 @@ export default function ArchiveDashboardPage() {
         supabase.from('work_updates').delete().eq('workflow_status', 'CLOSED').lt('created_at', thirtyDaysAgo),
         supabase.from('issues').delete().eq('lifecycle_status', 'CLOSED').lt('created_at', thirtyDaysAgo),
         supabase.from('audits').delete().lt('created_at', thirtyDaysAgo),
-        supabase.from('activity_log').delete().lt('created_at', thirtyDaysAgo)
+        supabase.from('activity_log').delete().or(`action_type.eq.AUDIT,created_at.lt.${thirtyDaysAgo}`)
       ])
       await supabase.from('archive_logs').update({ deletion_status: true, verified_by_admin: true }).eq('id', archive.id)
       toast.success('Data Purged!', { id: toastId })
