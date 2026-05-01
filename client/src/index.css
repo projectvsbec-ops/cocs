@@ -115,8 +115,30 @@ button, a {
 .btn-danger  { background: #fee2e2; color: var(--danger);  border: 2px solid #fecaca; }
 .btn-danger:hover   { background: #fecaca; }
 
-.btn-outline { background: white; color: var(--primary); border: 2px solid var(--primary); }
 .btn-outline:hover  { background: #eff6ff; }
+
+.btn-icon {
+  width: 40px; height: 40px; border-radius: 12px;
+  background: #f1f5f9; color: #475569;
+  display: flex; alignItems: center; justify-content: center;
+  border: none; cursor: pointer;
+}
+.btn-icon:hover { background: #e2e8f0; color: #1e293b; }
+
+.btn-back {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: none; border: none; color: var(--primary);
+  font-weight: 600; font-size: 0.9rem; cursor: pointer;
+  padding: 0 0 16px; margin-left: -4px;
+}
+
+.btn-badge-overlay {
+  position: absolute; top: 10px; right: 10px;
+  background: rgba(0,0,0,0.6); color: white;
+  border: none; border-radius: 8px;
+  padding: 6px 12px; cursor: pointer; font-weight: 600;
+  font-size: 0.75rem;
+}
 
 /* ── FORM ELEMENTS ─────────────────────────────────────── */
 .form-label {
@@ -157,6 +179,21 @@ select.form-input {
 textarea.form-input {
   min-height: auto;
   resize: vertical;
+}
+
+.upload-placeholder {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 10px; min-height: 140px;
+  border: 2px dashed #cbd5e1; border-radius: 16px;
+  cursor: pointer; background: #f8fafc; color: #64748b;
+  transition: all 0.2s;
+}
+.upload-placeholder:hover {
+  background: #f1f5f9; border-color: var(--primary);
+  color: var(--primary);
+}
+.upload-placeholder.mandatory-border {
+  border-color: #fca5a5; background: #fff5f5; color: #ef4444;
 }
 
 /* ── STATUS BADGES ─────────────────────────────────────── */

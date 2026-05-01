@@ -7,7 +7,9 @@ import WorkUpdatePage from './pages/WorkUpdatePage'
 import ReportIssuePage from './pages/ReportIssuePage'
 import MyTasksPage from './pages/MyTasksPage'
 import VerifyPage from './pages/VerifyPage'
-import DashboardPage from './pages/DashboardPage'
+import AdminDashboardPage from './pages/AdminDashboardPage'
+import ManagerDashboardPage from './pages/ManagerDashboardPage'
+import IssuesPage from './pages/IssuesPage'
 import AuditPage from './pages/AuditPage'
 
 function ProtectedRoute({ children, roles }) {
@@ -48,11 +50,17 @@ export default function App() {
         } />
 
         <Route path="/dashboard" element={
-          <ProtectedRoute roles={['Admin']}><DashboardPage /></ProtectedRoute>
+          <ProtectedRoute roles={['Admin','Manager']}>
+            {user?.role === 'Admin' ? <AdminDashboardPage /> : <ManagerDashboardPage />}
+          </ProtectedRoute>
         } />
 
         <Route path="/audit/new" element={
           <ProtectedRoute roles={['Admin']}><AuditPage /></ProtectedRoute>
+        } />
+        
+        <Route path="/issues" element={
+          <ProtectedRoute roles={['Admin','Manager']}><IssuesPage /></ProtectedRoute>
         } />
 
         <Route path="*" element={<Navigate to="/" replace />} />

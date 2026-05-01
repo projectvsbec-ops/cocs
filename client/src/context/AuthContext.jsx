@@ -77,8 +77,11 @@ export function AuthProvider({ children }) {
     if (error) console.error('Error logging out:', error);
   };
 
+  const isAdmin = user?.role === 'Admin';
+  const isManager = user?.role === 'Manager';
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, logout, loading, isAdmin, isManager }}>
       {children}
     </AuthContext.Provider>
   );

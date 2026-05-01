@@ -1,13 +1,30 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { Home, ClipboardList, CheckSquare, BarChart2, LogOut, Menu, X } from 'lucide-react'
-import { useState } from 'react'
+import { Home, ClipboardList, CheckSquare, BarChart2, LogOut, Menu, X, Bell } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import NotificationsCenter from './NotificationsCenter'
+import { supabase } from '../utils/supabaseClient'
 
 export default function Navbar() {
   const { user, logout } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [notifOpen, setNotifOpen] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
+
+  useEffect(() => {
+    if (user) {
+      const fetchUnread = async () => {
+        const { count } = await supabase.from('notifications').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('read', false)
+        setUnreadCount(count || 0)
+      }
+      fetchUnread()
+      
+      const channel = supabase.channel('notifs').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, fetchUnread).subscribe()
+      return () => supabase.removeChannel(channel)
+    }
+  }, [user])
 
   const handleLogout = () => {
     logout()
@@ -21,7 +38,8 @@ export default function Navbar() {
     { to: '/',          icon: <Home size={22} />,         label: 'Home',      roles: ['Admin','Manager'] },
     { to: '/my-tasks',  icon: <ClipboardList size={22} />,label: 'Tasks',     roles: ['Admin','Manager'] },
     { to: '/verify',    icon: <CheckSquare size={22} />,  label: 'Verify',    roles: ['Manager','Admin'] },
-    { to: '/dashboard', icon: <BarChart2 size={22} />,    label: 'Dashboard', roles: ['Admin'] },
+    { to: '/dashboard', icon: <BarChart2 size={22} />,    label: 'Dashboard', roles: ['Admin','Manager'] },
+    { to: '/issues',    icon: <AlertTriangle size={22} />, label: 'Issues',    roles: ['Admin','Manager'] },
   ].filter(l => l.roles.includes(user?.role))
 
   const isActive = (to) => location.pathname === to
@@ -59,6 +77,22 @@ export default function Navbar() {
 
         {/* Right: user info + hamburger */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          
+          <button onClick={() => setNotifOpen(true)} style={{
+            background: 'none', border: 'none', padding: '8px', position: 'relative', cursor: 'pointer', color: '#64748b'
+          }}>
+            <Bell size={22} />
+            {unreadCount > 0 && (
+              <div style={{
+                position: 'absolute', top: 6, right: 6, background: '#dc2626', color: 'white',
+                fontSize: '0.6rem', fontWeight: 800, width: 16, height: 16, borderRadius: '50%',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid white'
+              }}>
+                {unreadCount}
+              </div>
+            )}
+          </button>
+
           <div style={{ textAlign: 'right' }}>
             <div style={{ fontWeight: 600, fontSize: '0.82rem', color: '#1e293b', maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {user?.name}
@@ -167,6 +201,8 @@ export default function Navbar() {
           </Link>
         ))}
       </div>
+
+      <NotificationsCenter isOpen={notifOpen} onClose={() => setNotifOpen(false)} />
     </>
   )
 }

@@ -35,7 +35,7 @@ const HomeCard = ({ to, icon, label, sublabel, color, bg }) => (
 )
 
 export default function HomePage() {
-  const { user } = useAuth()
+  const { user, isAdmin, isManager } = useAuth()
 
   const roleColor = user?.role === 'Admin' ? '#7c3aed' : '#0891b2'
   const greeting = new Date().getHours() < 12 ? 'Good Morning' : new Date().getHours() < 17 ? 'Good Afternoon' : 'Good Evening'
@@ -98,30 +98,35 @@ export default function HomePage() {
             sublabel="View your updates"
             color="#16a34a"
           />
-          {(user?.role === 'Manager' || user?.role === 'Admin') && (
+          {isAdmin && (
             <HomeCard
               to="/verify"
               icon={<CheckSquare size={28} />}
               label="Verify Work"
-              sublabel="Approve or reject"
-              color="#0891b2"
-            />
-          )}
-          {user?.role === 'Admin' && (
-            <HomeCard
-              to="/dashboard"
-              icon={<BarChart2 size={28} />}
-              label="Dashboard"
-              sublabel="View all stats"
+              sublabel="Approve or Reject"
               color="#7c3aed"
             />
           )}
-          {user?.role === 'Admin' && (
+          <HomeCard
+            to="/issues"
+            icon={<AlertTriangle size={28} />}
+            label="Issue Command"
+            sublabel="Assign & Resolve"
+            color="#dc2626"
+          />
+          <HomeCard
+            to="/dashboard"
+            icon={<BarChart2 size={28} />}
+            label="Operations"
+            sublabel="Live Dashboard"
+            color="#0891b2"
+          />
+          {isAdmin && (
             <HomeCard
               to="/audit/new"
               icon={<Search size={28} />}
               label="New Audit"
-              sublabel="Conduct an audit"
+              sublabel="Official Audit"
               color="#d97706"
             />
           )}
