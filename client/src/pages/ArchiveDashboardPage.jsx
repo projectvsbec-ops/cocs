@@ -160,6 +160,10 @@ export default function ArchiveDashboardPage() {
   }
 
   const handleDownload = async (archive) => {
+    if (archive.deletion_status) {
+      toast.error('This data has already been purged from the database and cannot be re-downloaded.')
+      return
+    }
     setArchiving(true)
     const toastId = toast.loading('Re-preparing production backup (including folders & photos)...')
     
@@ -321,7 +325,13 @@ export default function ArchiveDashboardPage() {
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '8px' }}>
-                <button onClick={() => handleDownload(a)} disabled={archiving} className="btn-icon" title="Download Archive">
+                <button 
+                  onClick={() => handleDownload(a)} 
+                  disabled={archiving || a.deletion_status} 
+                  className="btn-icon" 
+                  style={{ opacity: a.deletion_status ? 0.3 : 1 }}
+                  title={a.deletion_status ? "Data Purged" : "Download Archive"}
+                >
                   <Download size={18} />
                 </button>
                 <button 
