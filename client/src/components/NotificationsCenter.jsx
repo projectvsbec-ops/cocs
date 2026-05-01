@@ -2,9 +2,11 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../utils/supabaseClient'
 import { useAuth } from '../context/AuthContext'
 import { Bell, Check, X, Info, AlertTriangle } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 
 export default function NotificationsCenter({ isOpen, onClose }) {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [notifs, setNotifs] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -26,9 +28,21 @@ export default function NotificationsCenter({ isOpen, onClose }) {
     setLoading(false)
   }
 
-  const markRead = async (id) => {
-    await supabase.from('notifications').update({ read: true }).eq('id', id)
-    setNotifs(notifs.map(n => n.id === id ? { ...n, read: true } : n))
+  const markRead = async (notification) => {
+    await supabase.from('notifications').update({ read: true }).eq('id', notification.id)
+    setNotifs(notifs.map(n => n.id === notification.id ? { ...n, read: true } : n))
+    
+    // NAVIGATION LOGIC
+    if (notification.entity_type === 'work' && notification.type === 'REJECTED') {
+      navigate(`/work/edit/${notification.entity_id}`)
+      onClose()
+    } else if (notification.entity_type === 'work') {
+      navigate('/my-tasks')
+      onClose()
+    } else if (notification.entity_type === 'issue') {
+      navigate('/issues')
+      onClose()
+    }
   }
 
   if (!isOpen) return null
@@ -58,7 +72,7 @@ export default function NotificationsCenter({ isOpen, onClose }) {
             </div>
           ) : (
             notifs.map(n => (
-              <div key={n.id} onClick={() => markRead(n.id)} style={{
+              <div key={n.id} onClick={() => markRead(n)} style={{
                 padding: '16px', borderRadius: '14px', marginBottom: '8px',
                 background: n.read ? 'white' : '#eff6ff',
                 border: '1px solid', borderColor: n.read ? '#f1f5f9' : '#dbeafe',

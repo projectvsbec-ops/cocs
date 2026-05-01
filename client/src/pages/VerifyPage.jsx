@@ -39,6 +39,18 @@ function VerifyCard({ item, onAction }) {
         metadata: { comment }
       }])
 
+      // INSERT NOTIFICATION
+      await supabase.from('notifications').insert([{
+        user_id: item.user_id,
+        type: status === 'APPROVED' ? 'APPROVED' : 'REJECTED',
+        title: status === 'APPROVED' ? '✅ Work Approved' : '❌ Work Rejected',
+        message: status === 'APPROVED' 
+          ? `Your update for ${item.work_type} has been approved.`
+          : `Rejection: ${comment}. Please resubmit.`,
+        entity_type: 'work',
+        entity_id: item.id
+      }])
+
       toast.success(`Work ${status.toLowerCase()} successfully!`)
       onAction()
     } catch (err) {

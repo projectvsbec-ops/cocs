@@ -39,6 +39,9 @@ export default function App() {
           <Route path="/work/new" element={
             <ProtectedRoute roles={['Admin','Manager']}><WorkUpdatePage /></ProtectedRoute>
           } />
+          <Route path="/work/edit/:id" element={
+            <ProtectedRoute roles={['Admin','Manager']}><WorkUpdatePage /></ProtectedRoute>
+          } />
 
           <Route path="/issue/new" element={
             <ProtectedRoute roles={['Admin','Manager']}><ReportIssuePage /></ProtectedRoute>
