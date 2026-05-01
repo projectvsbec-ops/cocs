@@ -95,7 +95,10 @@ export default function ArchiveDashboardPage() {
 
       if (logErr) throw logErr
 
-      toast.success('Archive generated successfully!', { id: toastId })
+      // TRIGGER BROWSER DOWNLOAD
+      saveAs(blob, fileName)
+
+      toast.success('Archive generated and downloaded!', { id: toastId })
       loadArchives()
     } catch (err) {
       console.error(err)
@@ -106,14 +109,39 @@ export default function ArchiveDashboardPage() {
   }
 
   const handleDownload = async (archive) => {
-    // In a real production app, we would fetch the file from storage.
-    // For this demonstration, we re-trigger the generation logic to "download".
-    // Or we could have uploaded it to Supabase Storage.
-    toast.success('Downloading archive...')
-    await supabase.from('archive_logs').update({ download_status: true }).eq('id', archive.id)
-    loadArchives()
-    // Re-generation logic would go here, or retrieval from storage bucket.
-    // For now, we simulate the status change.
+    setArchiving(true)
+    const toastId = toast.loading('Preparing download...')
+    
+    try {
+      const JSZip = (await loadJSZip()).default
+      const zip = new JSZip()
+      
+      const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString()
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+      const fifteenDaysAgo = new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString()
+
+      const [wRes, iRes, aRes, lRes] = await Promise.all([
+        supabase.from('work_updates').select('*, profiles(name), locations(name)').eq('workflow_status', 'CLOSED').lt('created_at', sixtyDaysAgo),
+        supabase.from('issues').select('*, profiles!reported_by(name), locations(name)').eq('lifecycle_status', 'CLOSED').lt('created_at', thirtyDaysAgo),
+        supabase.from('audits').select('*, profiles!admin_id(name)').lt('created_at', sixtyDaysAgo),
+        supabase.from('activity_log').select('*').lt('created_at', fifteenDaysAgo)
+      ])
+
+      zip.file('work_updates.json', JSON.stringify(wRes.data || [], null, 2))
+      zip.file('issues.json', JSON.stringify(iRes.data || [], null, 2))
+      zip.file('audits.json', JSON.stringify(aRes.data || [], null, 2))
+      
+      const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' })
+      saveAs(blob, archive.file_name)
+
+      await supabase.from('archive_logs').update({ download_status: true }).eq('id', archive.id)
+      toast.success('Download started!', { id: toastId })
+      loadArchives()
+    } catch (err) {
+      toast.error('Download failed', { id: toastId })
+    } finally {
+      setArchiving(false)
+    }
   }
 
   const handleDeleteData = async (archive) => {
