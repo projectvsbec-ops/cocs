@@ -41,16 +41,14 @@ export default function ArchiveDashboardPage() {
       const JSZip = (await loadJSZip()).default
       const zip = new JSZip()
       
-      const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString()
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
-      const fifteenDaysAgo = new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString()
 
-      // 1. Fetch Enriched Cold Data
+      // 1. Fetch Enriched Cold Data (Unified 30 Days)
       const [wRes, iRes, aRes, lRes] = await Promise.all([
-        supabase.from('work_updates').select('*, user:profiles!user_id(name), reviewer:profiles!verified_by(name), locations(name), departments(name)').eq('workflow_status', 'CLOSED').lt('created_at', sixtyDaysAgo),
+        supabase.from('work_updates').select('*, user:profiles!user_id(name), reviewer:profiles!verified_by(name), locations(name), departments(name)').eq('workflow_status', 'CLOSED').lt('created_at', thirtyDaysAgo),
         supabase.from('issues').select('*, reporter:profiles!reported_by(name), assignee:profiles!assigned_to(name), locations(name)').eq('lifecycle_status', 'CLOSED').lt('created_at', thirtyDaysAgo),
-        supabase.from('audits').select('*, admin:profiles!admin_id(name)').lt('created_at', sixtyDaysAgo),
-        supabase.from('activity_log').select('*, user:profiles(name)').lt('created_at', fifteenDaysAgo)
+        supabase.from('audits').select('*, admin:profiles!admin_id(name)').lt('created_at', thirtyDaysAgo),
+        supabase.from('activity_log').select('*, user:profiles(name)').lt('created_at', thirtyDaysAgo)
       ])
 
       const workUpdates = wRes.data || []
@@ -228,29 +226,47 @@ export default function ArchiveDashboardPage() {
       return
     }
     
-    const confirm = window.confirm('DANGER: This will PERMANENTLY delete all records contained in this archive. Have you verified the ZIP file? Type "DELETE" to confirm.')
+    const confirm = window.confirm('🚨 DANGER: This will PERMANENTLY delete all records and their attached PHOTOS from the database and storage. Type "DELETE" to confirm.')
     if (confirm !== true) return
 
-    const toastId = toast.loading('Executing safe deletion...')
+    const toastId = toast.loading('Cleaning up database and storage...')
     try {
-      const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString()
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
-      const fifteenDaysAgo = new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString()
 
+      // 1. Identify Photos to delete
+      const { data: workWithPhotos } = await supabase
+        .from('work_updates')
+        .select('photo_url')
+        .eq('workflow_status', 'CLOSED')
+        .lt('created_at', thirtyDaysAgo)
+      
+      const photoPaths = (workWithPhotos || [])
+        .filter(w => w.photo_url)
+        .map(w => {
+          const parts = w.photo_url.split('/')
+          return parts[parts.length - 1] // Get filename
+        })
+
+      // 2. Delete from Storage
+      if (photoPaths.length > 0) {
+        await supabase.storage.from('photos').remove(photoPaths.map(p => `work-updates/${p}`))
+      }
+
+      // 3. Delete from Tables
       await Promise.all([
-        supabase.from('work_updates').delete().eq('workflow_status', 'CLOSED').lt('created_at', sixtyDaysAgo),
+        supabase.from('work_updates').delete().eq('workflow_status', 'CLOSED').lt('created_at', thirtyDaysAgo),
         supabase.from('issues').delete().eq('lifecycle_status', 'CLOSED').lt('created_at', thirtyDaysAgo),
-        supabase.from('audits').delete().lt('created_at', sixtyDaysAgo),
-        supabase.from('activity_log').delete().lt('created_at', fifteenDaysAgo)
+        supabase.from('audits').delete().lt('created_at', thirtyDaysAgo),
+        supabase.from('activity_log').delete().lt('created_at', thirtyDaysAgo)
       ])
 
       await supabase.from('archive_logs').update({ deletion_status: true, verified_by_admin: true }).eq('id', archive.id)
       
-      toast.success('Database optimized! Cold data removed.', { id: toastId })
+      toast.success('Database and Storage optimized! Old data removed.', { id: toastId })
       loadArchives()
     } catch (err) {
       console.error(err)
-      toast.error('Deletion failed', { id: toastId })
+      toast.error('Optimization failed', { id: toastId })
     }
   }
 
@@ -261,7 +277,7 @@ export default function ArchiveDashboardPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
         <div>
           <h1 style={{ margin: 0, fontSize: '1.8rem', fontWeight: 800 }}>📦 Data Archival</h1>
-          <p style={{ margin: '4px 0 0', color: '#64748b' }}>Export human-readable data and evidence photos</p>
+          <p style={{ margin: '4px 0 0', color: '#64748b' }}>Clean up records older than 30 days</p>
         </div>
         <button onClick={generateArchive} disabled={archiving} className="btn btn-primary" style={{ width: 'auto', padding: '12px 20px' }}>
           {archiving ? <RefreshCw className="spin" size={18} /> : <Archive size={18} />}
@@ -273,11 +289,11 @@ export default function ArchiveDashboardPage() {
         <div style={{ display: 'flex', gap: '12px' }}>
           <AlertTriangle size={24} color="#d97706" />
           <div>
-            <h4 style={{ margin: '0 0 8px', color: '#9a3412', fontWeight: 800 }}>Archive Scope</h4>
+            <h4 style={{ margin: '0 0 8px', color: '#9a3412', fontWeight: 800 }}>Retention Policy (Unified 30 Days)</h4>
             <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '0.85rem', color: '#c2410c', lineHeight: 1.6 }}>
-              <li><b>Photos:</b> All evidence images included in <code>photos/</code> folder</li>
-              <li><b>Readable Data:</b> IDs are replaced with User and Location names</li>
-              <li><b>Safety:</b> Verification required before deletion</li>
+              <li><b>Work & Issues:</b> Archived after 30 days (Closed only)</li>
+              <li><b>Photos:</b> Permanently deleted from storage during optimization</li>
+              <li><b>Safety:</b> Records stay in DB until you verify the backup ZIP</li>
             </ul>
           </div>
         </div>
