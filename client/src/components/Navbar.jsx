@@ -32,7 +32,7 @@ export default function Navbar() {
     setMenuOpen(false)
   }
 
-  const roleColor = user?.role === 'Admin' ? '#7c3aed' : '#0891b2'
+  const roleColor = user?.role === 'Admin' ? 'var(--secondary)' : 'var(--accent)'
 
   const links = [
     { to: '/',          icon: <Home size={22} />,         label: 'Home',      roles: ['Admin','Manager'] },
@@ -48,156 +48,131 @@ export default function Navbar() {
     <>
       {/* ── TOP NAVBAR ── */}
       <nav style={{
-        position: 'sticky',
-        top: 0,
-        zIndex: 100,
-        height: '60px',
-        background: 'white',
-        borderBottom: '1px solid #e2e8f0',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '0 16px',
-        paddingTop: 'env(safe-area-inset-top, 0px)',
+        position: 'sticky', top: 0, zIndex: 100,
+        height: '64px', background: 'rgba(255,255,255,0.85)',
+        backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+        borderBottom: '1px solid rgba(226, 232, 240, 0.8)',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '0 16px', paddingTop: 'var(--safe-top)',
       }}>
         {/* Logo */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <div style={{
-            width: 36, height: 36, borderRadius: '10px',
-            background: 'linear-gradient(135deg, #2563eb, #7c3aed)',
+            width: 38, height: 38, borderRadius: '12px',
+            background: 'linear-gradient(135deg, var(--primary), var(--secondary))',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: 'white', fontWeight: 800, fontSize: '0.9rem', flexShrink: 0,
+            color: 'white', fontWeight: 900, fontSize: '0.95rem', flexShrink: 0,
+            boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)'
           }}>CO</div>
           <div>
-            <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#1e293b', lineHeight: 1.1 }}>COCS</div>
-            <div style={{ fontSize: '0.65rem', color: '#94a3b8', lineHeight: 1.1 }}>Campus Operations</div>
+            <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#0f172a', letterSpacing:'-0.02em' }}>COCS</div>
+            <div style={{ fontSize: '0.6rem', color: '#64748b', fontWeight:700, textTransform:'uppercase' }}>Ops Control</div>
           </div>
         </div>
 
-        {/* Right: user info + hamburger */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          
+        {/* Right Section */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <button onClick={() => setNotifOpen(true)} style={{
-            background: 'none', border: 'none', padding: '8px', position: 'relative', cursor: 'pointer', color: '#64748b'
+            background: 'none', border: 'none', padding: '10px', position: 'relative', cursor: 'pointer', color: '#475569'
           }}>
             <Bell size={22} />
             {unreadCount > 0 && (
               <div style={{
-                position: 'absolute', top: 6, right: 6, background: '#dc2626', color: 'white',
-                fontSize: '0.6rem', fontWeight: 800, width: 16, height: 16, borderRadius: '50%',
+                position: 'absolute', top: 8, right: 8, background: 'var(--danger)', color: 'white',
+                fontSize: '0.6rem', fontWeight: 900, width: 18, height: 18, borderRadius: '50%',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid white'
               }}>
-                {unreadCount}
+                {unreadCount > 9 ? '9+' : unreadCount}
               </div>
             )}
           </button>
 
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontWeight: 600, fontSize: '0.82rem', color: '#1e293b', maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {user?.name}
-            </div>
-            <div style={{ fontSize: '0.65rem', fontWeight: 700, color: roleColor, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              {user?.role}
-            </div>
-          </div>
           <button
-            id="hamburger-btn"
             onClick={() => setMenuOpen(!menuOpen)}
-            aria-label="Open menu"
             style={{
-              background: menuOpen ? '#eff6ff' : '#f1f5f9',
-              border: 'none', borderRadius: '10px',
-              width: 40, height: 40, minWidth: 40,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', color: '#475569',
+              background: menuOpen ? 'var(--primary-light)' : '#f8fafc',
+              border: 'none', borderRadius: '12px',
+              width: 42, height: 42, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', color: menuOpen ? 'var(--primary)' : '#475569',
+              transition: 'all 0.2s'
             }}>
-            {menuOpen ? <X size={20} /> : <Menu size={20} />}
+            {menuOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
         </div>
       </nav>
 
-      {/* ── SLIDE-DOWN MENU OVERLAY ── */}
+      {/* ── MOBILE MENU OVERLAY ── */}
       {menuOpen && (
-        <div
-          onClick={() => setMenuOpen(false)}
-          style={{
-            position: 'fixed', inset: 0, top: '60px',
-            background: 'rgba(0,0,0,0.45)', zIndex: 99,
-          }}>
+        <div className="overlay" onClick={() => setMenuOpen(false)} style={{ top: '64px', background: 'rgba(15, 23, 42, 0.6)' }}>
           <div
             onClick={e => e.stopPropagation()}
             style={{
-              background: 'white',
-              padding: '12px',
-              borderRadius: '0 0 20px 20px',
-              boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+              background: 'white', position: 'absolute', top: 0, left: 0, right: 0,
+              padding: '16px', borderRadius: '0 0 32px 32px',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
+              animation: 'fadeInUp 0.3s ease-out'
             }}>
+            <div style={{ display:'flex', alignItems:'center', gap:'12px', padding:'0 8px 16px', borderBottom:'1px solid #f1f5f9', marginBottom:'12px' }}>
+              <div style={{ width:44, height:44, borderRadius:'50%', background:'#f1f5f9', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.2rem' }}>👤</div>
+              <div>
+                <div style={{ fontWeight:800, fontSize:'1rem', color:'#1e293b' }}>{user?.name}</div>
+                <div style={{ fontSize:'0.7rem', fontWeight:800, color:roleColor, textTransform:'uppercase' }}>{user?.role}</div>
+              </div>
+            </div>
+
             {links.map(l => (
               <Link key={l.to} to={l.to} onClick={() => setMenuOpen(false)} style={{
                 display: 'flex', alignItems: 'center', gap: '14px',
-                padding: '14px 16px', borderRadius: '12px', textDecoration: 'none',
-                fontWeight: 600, fontSize: '1rem', marginBottom: '4px',
-                background: isActive(l.to) ? '#eff6ff' : 'transparent',
-                color: isActive(l.to) ? '#2563eb' : '#475569',
+                padding: '16px', borderRadius: '16px', textDecoration: 'none',
+                fontWeight: 700, fontSize: '1rem', marginBottom: '4px',
+                background: isActive(l.to) ? 'var(--primary-light)' : 'transparent',
+                color: isActive(l.to) ? 'var(--primary)' : '#475569',
+                transition: 'all 0.2s'
               }}>
-                {l.icon} {l.label}
+                <span style={{ opacity: isActive(l.to) ? 1 : 0.6 }}>{l.icon}</span> {l.label}
               </Link>
             ))}
 
-            <div style={{ height: '1px', background: '#f1f5f9', margin: '8px 0' }} />
-
-            <button
-              id="logout-btn"
-              onClick={handleLogout}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '14px',
-                padding: '14px 16px', borderRadius: '12px',
-                fontWeight: 600, fontSize: '1rem', cursor: 'pointer',
-                background: '#fee2e2', color: '#dc2626', border: 'none',
-                width: '100%',
-              }}>
-              <LogOut size={20} /> Logout
+            <button onClick={handleLogout} style={{
+              display: 'flex', alignItems: 'center', gap: '14px',
+              padding: '16px', borderRadius: '16px', marginTop: '12px',
+              fontWeight: 700, fontSize: '1rem', cursor: 'pointer',
+              background: '#fff1f2', color: 'var(--danger)', border: 'none',
+              width: '100%', transition: 'all 0.2s'
+            }}>
+              <LogOut size={20} /> Logout Account
             </button>
-
-            <div style={{ height: '4px' }} />
           </div>
         </div>
       )}
 
       {/* ── BOTTOM TAB BAR ── */}
       <div style={{
-        position: 'fixed',
-        bottom: 0, left: 0, right: 0,
-        zIndex: 98,
-        background: 'white',
-        borderTop: '1px solid #e2e8f0',
-        boxShadow: '0 -2px 12px rgba(0,0,0,0.06)',
-        display: 'flex',
-        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+        position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 98,
+        background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(16px)',
+        borderTop: '1px solid rgba(226, 232, 240, 0.8)',
+        display: 'flex', paddingBottom: 'var(--safe-bottom)',
+        height: 'calc(65px + var(--safe-bottom))'
       }}>
         {links.map(l => (
-          <Link key={l.to} to={l.to} style={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '10px 4px',
-            textDecoration: 'none',
-            gap: '3px',
-            color: isActive(l.to) ? '#2563eb' : '#94a3b8',
-            fontWeight: isActive(l.to) ? 700 : 500,
-            fontSize: '0.62rem',
-            textTransform: 'uppercase',
-            letterSpacing: '0.03em',
-            borderTop: isActive(l.to) ? '3px solid #2563eb' : '3px solid transparent',
-            minWidth: 0,
+          <Link key={l.to} to={l.to} className={`nav-link ${isActive(l.to) ? 'active' : ''}`} style={{
+            flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            textDecoration: 'none', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            position: 'relative'
           }}>
-            {l.icon}
-            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>
-              {l.label}
-            </span>
+            <div style={{ 
+              transform: isActive(l.to) ? 'translateY(-2px)' : 'none',
+              transition: 'transform 0.3s ease'
+            }}>
+              {l.icon}
+            </div>
+            <span style={{ fontSize:'0.65rem', marginTop:'2px' }}>{l.label}</span>
+            {isActive(l.to) && (
+              <div style={{
+                position:'absolute', top:0, width:'24px', height:'3px', 
+                background:'var(--primary)', borderRadius:'0 0 4px 4px'
+              }} />
+            )}
           </Link>
         ))}
       </div>
