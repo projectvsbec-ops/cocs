@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { Home, ClipboardList, CheckSquare, BarChart2, LogOut, Menu, X, Bell } from 'lucide-react'
+import { Home, ClipboardList, CheckSquare, BarChart2, LogOut, Menu, X, Bell, AlertTriangle } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import NotificationsCenter from './NotificationsCenter'
 import { supabase } from '../utils/supabaseClient'
