@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../utils/supabaseClient'
 import { useAuth } from '../context/AuthContext'
 import toast from 'react-hot-toast'
-import { 
-  Database, Download, Trash2, CheckCircle, 
+import {
+  Database, Download, Trash2, CheckCircle,
   AlertTriangle, RefreshCw, Archive, Clock, FileText,
   ChevronRight, Info, ShieldCheck
 } from 'lucide-react'
@@ -34,10 +34,10 @@ export default function ArchiveDashboardPage() {
 
   const generateArchive = async () => {
     if (!window.confirm('Are you sure? This will package all records older than 30 days and evidence photos.')) return
-    
+
     setArchiving(true)
     const toastId = toast.loading('Generating backup & zipping photos...')
-    
+
     try {
       const JSZip = (await loadJSZip()).default
       const zip = new JSZip()
@@ -74,7 +74,7 @@ export default function ArchiveDashboardPage() {
             const blob = await resp.blob()
             workPhotos.file(`work_${w.id.substring(0, 8)}.jpg`, blob)
           }
-        } catch (e) {}
+        } catch (e) { }
       })
 
       await Promise.all(workPhotoPromises)
@@ -85,10 +85,10 @@ export default function ArchiveDashboardPage() {
 
       const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' })
       const fileName = `COCS_Audit_Backup_${new Date().toISOString().split('T')[0]}.zip`
-      
+
       const { error: logErr } = await supabase.from('archive_logs').insert([{
         file_name: fileName,
-        record_counts: { work: workUpdates.length, issues: issues.length, photos: workUpdates.filter(w=>w.photo_url).length },
+        record_counts: { work: workUpdates.length, issues: issues.length, photos: workUpdates.filter(w => w.photo_url).length },
         file_size: (blob.size / 1024 / 1024).toFixed(2) + ' MB',
         admin_id: user.id
       }])
@@ -175,8 +175,8 @@ export default function ArchiveDashboardPage() {
           <div>
             <h4 style={{ margin: '0 0 8px', color: '#9a3412', fontWeight: 800 }}>Retention Policy (30 Days)</h4>
             <div style={{ fontSize: '0.85rem', color: '#c2410c', lineHeight: 1.6 }}>
-              • All <b>Closed</b> records older than 30 days are targeted.<br/>
-              • <b>Photos</b> are permanently purged after optimization.<br/>
+              • All <b>Closed</b> records older than 30 days are targeted.<br />
+              • <b>Photos</b> are permanently purged after optimization.<br />
               • <b>Safety:</b> Download is required before data can be deleted.
             </div>
           </div>
@@ -184,7 +184,7 @@ export default function ArchiveDashboardPage() {
       </div>
 
       <div className="section-title">Archival History</div>
-      
+
       {loading ? (
         <div style={{ textAlign: 'center', padding: '40px' }}><RefreshCw className="spin" size={32} color="#cbd5e1" /></div>
       ) : archives.length === 0 ? (
