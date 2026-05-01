@@ -32,10 +32,10 @@ export default function ArchiveDashboardPage() {
   }
 
   const generateArchive = async () => {
-    if (!window.confirm('Are you sure you want to generate a new archive? This will fetch all "cold" data.')) return
+    if (!window.confirm('Are you sure you want to generate a new archive? This will fetch all "cold" data and evidence photos.')) return
     
     setArchiving(true)
-    const toastId = toast.loading('Generating production archive...')
+    const toastId = toast.loading('Generating production archive (including photos)...')
     
     try {
       const JSZip = (await loadJSZip()).default
@@ -45,59 +45,74 @@ export default function ArchiveDashboardPage() {
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
       const fifteenDaysAgo = new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString()
 
-      // Fetch Cold Data
+      // 1. Fetch Enriched Cold Data
       const [wRes, iRes, aRes, lRes] = await Promise.all([
-        supabase.from('work_updates').select('*, profiles(name), locations(name)').eq('workflow_status', 'CLOSED').lt('created_at', sixtyDaysAgo),
-        supabase.from('issues').select('*, profiles!reported_by(name), locations(name)').eq('lifecycle_status', 'CLOSED').lt('created_at', thirtyDaysAgo),
-        supabase.from('audits').select('*, profiles!admin_id(name)').lt('created_at', sixtyDaysAgo),
-        supabase.from('activity_log').select('*').lt('created_at', fifteenDaysAgo)
+        supabase.from('work_updates').select('*, user:profiles!user_id(name), reviewer:profiles!verified_by(name), locations(name), departments(name)').eq('workflow_status', 'CLOSED').lt('created_at', sixtyDaysAgo),
+        supabase.from('issues').select('*, reporter:profiles!reported_by(name), assignee:profiles!assigned_to(name), locations(name)').eq('lifecycle_status', 'CLOSED').lt('created_at', thirtyDaysAgo),
+        supabase.from('audits').select('*, admin:profiles!admin_id(name)').lt('created_at', sixtyDaysAgo),
+        supabase.from('activity_log').select('*, user:profiles(name)').lt('created_at', fifteenDaysAgo)
       ])
 
-      const data = {
-        work_updates: wRes.data || [],
-        issues: iRes.data || [],
-        audits: aRes.data || [],
-        activity_logs: lRes.data || []
+      const workUpdates = wRes.data || []
+      const issues = iRes.data || []
+      const audits = aRes.data || []
+      const logs = lRes.data || []
+
+      if ([workUpdates, issues, audits, logs].every(arr => arr.length === 0)) {
+        throw new Error('No "cold" data found to archive.')
       }
 
-      const counts = {
-        work: data.work_updates.length,
-        issues: data.issues.length,
-        audits: data.audits.length,
-        logs: data.activity_logs.length
-      }
+      // 2. Process Photos
+      const photoFolder = zip.folder('photos')
+      const photoPromises = workUpdates
+        .filter(w => w.photo_url)
+        .map(async (w) => {
+          try {
+            const resp = await fetch(w.photo_url)
+            if (!resp.ok) return
+            const blob = await resp.blob()
+            const ext = w.photo_url.split('.').pop().split('?')[0] || 'jpg'
+            const photoName = `work_${w.id.substring(0, 8)}.${ext}`
+            photoFolder.file(photoName, blob)
+            w.local_photo_path = `photos/${photoName}`
+          } catch (e) {
+            console.warn('Failed to fetch photo:', w.photo_url)
+          }
+        })
 
-      if (Object.values(counts).every(c => c === 0)) {
-        throw new Error('No "cold" data found to archive at this time.')
-      }
+      await Promise.all(photoPromises)
 
-      // Add Files to ZIP
-      zip.file('work_updates.json', JSON.stringify(data.work_updates, null, 2))
-      zip.file('issues.json', JSON.stringify(data.issues, null, 2))
-      zip.file('audits.json', JSON.stringify(data.audits, null, 2))
+      // 3. Add Data Files to ZIP
+      zip.file('work_updates.json', JSON.stringify(workUpdates, null, 2))
+      zip.file('issues.json', JSON.stringify(issues, null, 2))
+      zip.file('audits.json', JSON.stringify(audits, null, 2))
       
-      // Convert logs to CSV
-      const logCsv = ['id,user_id,action_type,entity_type,detail,created_at', ...data.activity_logs.map(l => 
-        `${l.id},${l.user_id},${l.action_type},${l.entity_type},"${l.detail.replace(/"/g, '""')}",${l.created_at}`
+      const logCsv = ['id,user_name,action_type,entity_type,detail,created_at', ...logs.map(l => 
+        `${l.id},"${l.user?.name || 'Unknown'}",${l.action_type},${l.entity_type},"${l.detail.replace(/"/g, '""')}",${l.created_at}`
       )].join('\n')
       zip.file('activity_logs.csv', logCsv)
 
       const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' })
-      const fileName = `COCS_Archive_${new Date().getFullYear()}_${new Date().getMonth() + 1}.zip`
+      const fileName = `COCS_Full_Archive_${new Date().toISOString().split('T')[0]}.zip`
       
-      // Log to DB
-      const { data: logEntry, error: logErr } = await supabase.from('archive_logs').insert([{
+      const counts = { 
+        work: workUpdates.length, 
+        issues: issues.length, 
+        audits: audits.length, 
+        logs: logs.length, 
+        photos: photoPromises.length 
+      }
+
+      const { error: logErr } = await supabase.from('archive_logs').insert([{
         file_name: fileName,
         record_counts: counts,
         file_size: (blob.size / 1024 / 1024).toFixed(2) + ' MB',
         admin_id: user.id
-      }]).select().single()
+      }])
 
       if (logErr) throw logErr
 
-      // TRIGGER BROWSER DOWNLOAD
       saveAs(blob, fileName)
-
       toast.success('Archive generated and downloaded!', { id: toastId })
       loadArchives()
     } catch (err) {
@@ -110,7 +125,7 @@ export default function ArchiveDashboardPage() {
 
   const handleDownload = async (archive) => {
     setArchiving(true)
-    const toastId = toast.loading('Preparing download...')
+    const toastId = toast.loading('Re-preparing full download (including photos)...')
     
     try {
       const JSZip = (await loadJSZip()).default
@@ -121,13 +136,29 @@ export default function ArchiveDashboardPage() {
       const fifteenDaysAgo = new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString()
 
       const [wRes, iRes, aRes, lRes] = await Promise.all([
-        supabase.from('work_updates').select('*, profiles(name), locations(name)').eq('workflow_status', 'CLOSED').lt('created_at', sixtyDaysAgo),
-        supabase.from('issues').select('*, profiles!reported_by(name), locations(name)').eq('lifecycle_status', 'CLOSED').lt('created_at', thirtyDaysAgo),
-        supabase.from('audits').select('*, profiles!admin_id(name)').lt('created_at', sixtyDaysAgo),
-        supabase.from('activity_log').select('*').lt('created_at', fifteenDaysAgo)
+        supabase.from('work_updates').select('*, user:profiles!user_id(name), reviewer:profiles!verified_by(name), locations(name), departments(name)').eq('workflow_status', 'CLOSED').lt('created_at', sixtyDaysAgo),
+        supabase.from('issues').select('*, reporter:profiles!reported_by(name), assignee:profiles!assigned_to(name), locations(name)').eq('lifecycle_status', 'CLOSED').lt('created_at', thirtyDaysAgo),
+        supabase.from('audits').select('*, admin:profiles!admin_id(name)').lt('created_at', sixtyDaysAgo),
+        supabase.from('activity_log').select('*, user:profiles(name)').lt('created_at', fifteenDaysAgo)
       ])
 
-      zip.file('work_updates.json', JSON.stringify(wRes.data || [], null, 2))
+      const workUpdates = wRes.data || []
+      const photoFolder = zip.folder('photos')
+      const photoPromises = workUpdates
+        .filter(w => w.photo_url)
+        .map(async (w) => {
+          try {
+            const resp = await fetch(w.photo_url)
+            if (resp.ok) {
+              const blob = await resp.blob()
+              const ext = w.photo_url.split('.').pop().split('?')[0] || 'jpg'
+              photoFolder.file(`work_${w.id.substring(0, 8)}.${ext}`, blob)
+            }
+          } catch (e) {}
+        })
+      await Promise.all(photoPromises)
+
+      zip.file('work_updates.json', JSON.stringify(workUpdates, null, 2))
       zip.file('issues.json', JSON.stringify(iRes.data || [], null, 2))
       zip.file('audits.json', JSON.stringify(aRes.data || [], null, 2))
       
@@ -138,6 +169,7 @@ export default function ArchiveDashboardPage() {
       toast.success('Download started!', { id: toastId })
       loadArchives()
     } catch (err) {
+      console.error(err)
       toast.error('Download failed', { id: toastId })
     } finally {
       setArchiving(false)
@@ -150,8 +182,8 @@ export default function ArchiveDashboardPage() {
       return
     }
     
-    const confirm = window.confirm('DANGER: This will PERMANENTLY delete all records contained in this archive from the database. Have you verified the ZIP file? Type "DELETE" to confirm.')
-    if (confirm !== true) return // Simple confirm for now
+    const confirm = window.confirm('DANGER: This will PERMANENTLY delete all records contained in this archive. Have you verified the ZIP file? Type "DELETE" to confirm.')
+    if (confirm !== true) return
 
     const toastId = toast.loading('Executing safe deletion...')
     try {
@@ -183,11 +215,11 @@ export default function ArchiveDashboardPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
         <div>
           <h1 style={{ margin: 0, fontSize: '1.8rem', fontWeight: 800 }}>📦 Data Archival</h1>
-          <p style={{ margin: '4px 0 0', color: '#64748b' }}>Optimize storage by archiving "cold" data</p>
+          <p style={{ margin: '4px 0 0', color: '#64748b' }}>Export human-readable data and evidence photos</p>
         </div>
         <button onClick={generateArchive} disabled={archiving} className="btn btn-primary" style={{ width: 'auto', padding: '12px 20px' }}>
           {archiving ? <RefreshCw className="spin" size={18} /> : <Archive size={18} />}
-          Generate Monthly Archive
+          Generate Full Backup
         </button>
       </div>
 
@@ -195,17 +227,17 @@ export default function ArchiveDashboardPage() {
         <div style={{ display: 'flex', gap: '12px' }}>
           <AlertTriangle size={24} color="#d97706" />
           <div>
-            <h4 style={{ margin: '0 0 8px', color: '#9a3412', fontWeight: 800 }}>Retention Policy</h4>
+            <h4 style={{ margin: '0 0 8px', color: '#9a3412', fontWeight: 800 }}>Archive Scope</h4>
             <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '0.85rem', color: '#c2410c', lineHeight: 1.6 }}>
-              <li><b>Work Updates:</b> Archived after 60 days (Closed only)</li>
-              <li><b>Issues:</b> Archived after 30 days (Closed only)</li>
-              <li><b>Activity Logs:</b> Archived after 15 days</li>
+              <li><b>Photos:</b> All evidence images included in <code>photos/</code> folder</li>
+              <li><b>Readable Data:</b> IDs are replaced with User and Location names</li>
+              <li><b>Safety:</b> Verification required before deletion</li>
             </ul>
           </div>
         </div>
       </div>
 
-      <div className="section-title">Past Archives</div>
+      <div className="section-title">Archival History</div>
       {loading ? (
         <p>Loading archives...</p>
       ) : archives.length === 0 ? (
@@ -223,18 +255,17 @@ export default function ArchiveDashboardPage() {
                 </div>
                 <div>
                   <div style={{ fontWeight: 800, fontSize: '1rem' }}>{a.file_name}</div>
-                  <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Size: {a.file_size} • Created: {new Date(a.created_at).toLocaleDateString()}</div>
+                  <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Size: {a.file_size} • {new Date(a.created_at).toLocaleDateString()}</div>
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '8px' }}>
-                <button onClick={() => handleDownload(a)} className="btn-icon" title="Download Archive">
+                <button onClick={() => handleDownload(a)} disabled={archiving} className="btn-icon" title="Download Archive">
                   <Download size={18} />
                 </button>
                 <button 
                   onClick={() => handleDeleteData(a)} 
                   className="btn-icon" 
                   style={{ color: a.deletion_status ? '#16a34a' : '#dc2626' }} 
-                  title={a.deletion_status ? "Data Deleted" : "Delete Archived Data"}
                   disabled={a.deletion_status}
                 >
                   <Trash2 size={18} />
@@ -244,15 +275,15 @@ export default function ArchiveDashboardPage() {
 
             <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
               <div className={`badge ${a.download_status ? 'badge-green' : 'badge-yellow'}`}>
-                {a.download_status ? '✅ Downloaded' : '⏳ Not Downloaded'}
+                {a.download_status ? '✅ Downloaded' : '⏳ Pending Download'}
               </div>
               <div className={`badge ${a.deletion_status ? 'badge-green' : 'badge-red'}`}>
-                {a.deletion_status ? '🗑️ Data Deleted' : '📦 Data in Database'}
+                {a.deletion_status ? '🗑️ Optimized' : '📦 Active in DB'}
               </div>
-              <div style={{ fontSize: '0.75rem', color: '#64748b', display: 'flex', gap: '8px', marginLeft: 'auto' }}>
-                <span>Work: {a.record_counts.work}</span>
-                <span>Issues: {a.record_counts.issues}</span>
-                <span>Logs: {a.record_counts.logs}</span>
+              <div style={{ fontSize: '0.75rem', color: '#64748b', display: 'flex', gap: '8px', marginLeft: 'auto', fontWeight:600 }}>
+                <span>Photos: {a.record_counts?.photos || 0}</span>
+                <span>Work: {a.record_counts?.work || 0}</span>
+                <span>Issues: {a.record_counts?.issues || 0}</span>
               </div>
             </div>
           </div>
