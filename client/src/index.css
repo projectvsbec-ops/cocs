@@ -7,12 +7,13 @@
   --success: #16a34a;
   --warning: #d97706;
   --bg-app: #f8fafc;
-  --text-main: #1e293b;
+  --text-main: #0f172a;
   --text-muted: #64748b;
   --radius-lg: 24px;
-  --radius-md: 16px;
-  --shadow: 0 4px 20px rgba(0,0,0,0.05);
-  --glass: rgba(255, 255, 255, 0.8);
+  --radius-md: 20px;
+  --shadow-sm: 0 4px 12px rgba(0,0,0,0.03);
+  --shadow-md: 0 8px 30px rgba(0,0,0,0.06);
+  --glass: rgba(255, 255, 255, 0.85);
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
@@ -54,9 +55,13 @@ body {
 .card {
   background: white;
   border-radius: var(--radius-md);
-  box-shadow: var(--shadow);
-  border: 1px solid #f1f5f9;
-  transition: transform 0.2s ease;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid rgba(226, 232, 240, 0.5);
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+}
+
+.card:active {
+  transform: scale(0.98);
 }
 
 .card:active {
