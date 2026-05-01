@@ -5,7 +5,8 @@ import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { 
   RefreshCw, ClipboardList, AlertTriangle, 
-  Image, Edit3, MessageSquare, UserCheck 
+  Image, Edit3, MessageSquare, UserCheck,
+  Hand, CheckCircle2, MapPin
 } from 'lucide-react'
 
 function StatusBadge({ status }) {
@@ -16,28 +17,32 @@ function StatusBadge({ status }) {
     CLOSED:       { cls:'badge-gray',   label:'✔️ Closed' },
     RESUBMITTED:  { cls:'badge-blue',   label:'🔄 Resubmitted' },
     UNDER_REVIEW: { cls:'badge-yellow', label:'🔍 Under Review' },
-    OPEN:         { cls:'badge-red',    label:'🔴 Open' },
-    RESOLVED:     { cls:'badge-green',  label:'✅ Resolved' },
+    OPEN:         { cls:'badge-red',    label:'🔴 AVAILABLE' },
+    CLAIMED:      { cls:'badge-blue',   label:'💎 CLAIMED' },
   }
   const s = map[status] || { cls:'badge-gray', label: status }
   return <span className={`badge ${s.cls}`}>{s.label}</span>
 }
 
-function WorkCard({ item }) {
+function WorkCard({ item, onClaim }) {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [imgOpen, setImgOpen] = useState(false)
+  const isAvailable = item.workflow_status === 'OPEN'
   
   return (
-    <div className="card" style={{ padding:'20px', marginBottom:'16px', borderLeft: item.workflow_status === 'REJECTED' ? '4px solid #dc2626' : 'none' }}>
+    <div className="card" style={{ padding:'20px', marginBottom:'16px', borderLeft: isAvailable ? '4px solid #ef4444' : (item.workflow_status === 'REJECTED' ? '4px solid #dc2626' : 'none') }}>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'12px' }}>
         <div>
           <div style={{ fontWeight:800, fontSize:'1.1rem', color:'#1e293b' }}>{item.work_type}</div>
-          <div style={{ color:'#64748b', fontSize:'0.85rem', marginTop:'4px' }}>
-            📍 {item.locations?.name || 'Global'}
+          <div style={{ color:'#64748b', fontSize:'0.85rem', marginTop:'4px', display:'flex', alignItems:'center', gap:'4px' }}>
+            <MapPin size={14} /> {item.locations?.name || 'Global'}
           </div>
         </div>
         <StatusBadge status={item.workflow_status} />
       </div>
+
+      {item.notes && <p style={{ margin:'12px 0', fontSize:'0.9rem', color:'#475569' }}>{item.notes}</p>}
 
       <div style={{ display:'flex', gap:'8px', flexWrap:'wrap', marginBottom:'12px' }}>
         {item.photo_url && (
@@ -48,17 +53,11 @@ function WorkCard({ item }) {
       </div>
 
       {item.verify_comment && (
-        <div style={{ 
-          marginTop:'12px', padding:'12px', background:'#fff1f2', 
-          borderRadius:'12px', border:'1px solid #ffe4e6' 
-        }}>
+        <div style={{ marginTop:'12px', padding:'12px', background:'#fff1f2', borderRadius:'12px', border:'1px solid #ffe4e6' }}>
           <div style={{ display:'flex', alignItems:'center', gap:'6px', color:'#be123c', fontWeight:700, fontSize:'0.8rem', marginBottom:'4px' }}>
             <MessageSquare size={14} /> Admin Feedback
           </div>
           <div style={{ fontSize:'0.9rem', color:'#9f1239' }}>{item.verify_comment}</div>
-          <div style={{ marginTop:'6px', fontSize:'0.75rem', color:'#f43f5e', display:'flex', alignItems:'center', gap:'4px' }}>
-            <UserCheck size={12} /> Reviewed by {item.reviewer?.name || 'Administrator'}
-          </div>
         </div>
       )}
 
@@ -66,13 +65,23 @@ function WorkCard({ item }) {
         <div style={{ fontSize:'0.75rem', color:'#94a3b8' }}>
           {new Date(item.created_at).toLocaleString()}
         </div>
-        {item.workflow_status === 'REJECTED' && (
+        
+        {isAvailable ? (
           <button 
-            onClick={() => navigate(`/work/edit/${item.id}`)}
+            onClick={() => onClaim(item.id)}
             className="btn btn-primary" 
-            style={{ width:'auto', minHeight:'40px', padding:'0 16px', fontSize:'0.85rem', background:'#dc2626' }}>
-            <Edit3 size={16} /> Fix & Resubmit
+            style={{ width:'auto', minHeight:'40px', padding:'0 16px', fontSize:'0.85rem', background:'#2563eb' }}>
+            <Hand size={16} /> Manager Claim
           </button>
+        ) : (
+          item.workflow_status === 'REJECTED' && (
+            <button 
+              onClick={() => navigate(`/work/edit/${item.id}`)}
+              className="btn btn-primary" 
+              style={{ width:'auto', minHeight:'40px', padding:'0 16px', fontSize:'0.85rem', background:'#dc2626' }}>
+              <Edit3 size={16} /> Fix & Resubmit
+            </button>
+          )
         )}
       </div>
 
@@ -85,69 +94,55 @@ function WorkCard({ item }) {
   )
 }
 
-function IssueCard({ item }) {
-  const pColor = item.priority==='High'?'#dc2626':item.priority==='Medium'?'#d97706':'#16a34a'
-  return (
-    <div className="card" style={{ padding:'20px', marginBottom:'16px', borderLeft:`4px solid ${pColor}` }}>
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'12px' }}>
-        <div>
-          <div style={{ fontWeight:800, fontSize:'1.1rem' }}>{item.issue_type}</div>
-          <div style={{ color:'#64748b', fontSize:'0.85rem', marginTop:'4px' }}>📍 {item.locations?.name || 'Global'}</div>
-        </div>
-        <StatusBadge status={item.lifecycle_status} />
-      </div>
-      
-      <div style={{ display:'flex', gap:'8px', marginBottom:'12px' }}>
-        <span className="badge" style={{ background:`${pColor}18`, color:pColor }}>
-          {item.priority} Priority
-        </span>
-        {item.due_at && (
-          <span className="badge badge-gray">SLA: {new Date(item.due_at).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })}</span>
-        )}
-      </div>
-
-      {item.description && <p style={{ margin:'0 0 16px', fontSize:'0.9rem', color:'#475569' }}>{item.description}</p>}
-      
-      <div style={{ fontSize:'0.75rem', color:'#94a3b8' }}>
-        {new Date(item.created_at).toLocaleString()}
-      </div>
-    </div>
-  )
-}
-
 export default function MyTasksPage() {
   const { user } = useAuth()
-  const [tab, setTab] = useState('work')
-  const [workUpdates, setWorkUpdates] = useState([])
-  const [issues, setIssues] = useState([])
+  const [tab, setTab] = useState('claimed') // 'claimed', 'pool'
+  const [myWork, setMyWork] = useState([])
+  const [pool, setPool] = useState([])
   const [loading, setLoading] = useState(true)
 
   const load = async () => {
     setLoading(true)
     try {
-      const [wRes, iRes] = await Promise.all([
+      const [myRes, poolRes] = await Promise.all([
         supabase
           .from('work_updates')
-          .select(`*, locations(name), reviewer:profiles!verified_by(name)`)
+          .select(`*, locations(name)`)
           .eq('user_id', user.id)
           .order('created_at', { ascending: false }),
         supabase
-          .from('issues')
+          .from('work_updates')
           .select(`*, locations(name)`)
-          .eq('reported_by', user.id)
+          .eq('workflow_status', 'OPEN')
           .order('created_at', { ascending: false })
       ])
 
-      if (wRes.error) throw wRes.error
-      if (iRes.error) throw iRes.error
-
-      setWorkUpdates(wRes.data)
-      setIssues(iRes.data)
+      setMyWork(myRes.data || [])
+      setPool(poolRes.data || [])
     } catch (err) {
-      console.error(err)
-      toast.error('Could not load your history')
+      toast.error('Could not load task data')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleClaim = async (id) => {
+    const toastId = toast.loading('Claiming task...')
+    try {
+      const { error } = await supabase
+        .from('work_updates')
+        .update({ 
+          user_id: user.id, 
+          workflow_status: 'CLAIMED',
+          claim_status: 'Pending'
+        })
+        .eq('id', id)
+      
+      if (error) throw error
+      toast.success('Task Claimed! Moved to your history.', { id: toastId })
+      load()
+    } catch (err) {
+      toast.error('Claim failed', { id: toastId })
     }
   }
 
@@ -157,39 +152,47 @@ export default function MyTasksPage() {
     <div className="page fade-in">
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'24px' }}>
         <div>
-          <h1 style={{ margin:0, fontSize:'1.6rem', fontWeight:800 }}>📋 My History</h1>
-          <p style={{ margin:'4px 0 0', color:'#64748b' }}>Track your operational contributions</p>
+          <h1 style={{ margin:0, fontSize:'1.6rem', fontWeight:900 }}>Manager Claim</h1>
+          <p style={{ margin:'4px 0 0', color:'#64748b', fontWeight: 600 }}>Available Tasks & My History</p>
         </div>
         <button onClick={load} className="btn-icon">
-          <RefreshCw size={18} />
+          <RefreshCw size={18} className={loading ? 'spin' : ''} />
         </button>
       </div>
 
-      <div style={{ display:'flex', gap:'6px', background:'#f1f5f9', borderRadius:'14px', padding:'4px', marginBottom:'24px' }}>
+      <div style={{ display:'flex', gap:'6px', background:'#f1f5f9', borderRadius:'16px', padding:'4px', marginBottom:'24px' }}>
         <button 
-          onClick={() => setTab('work')} 
-          className={`btn ${tab==='work'?'btn-primary':''}`} 
-          style={{ flex:1, minHeight:'44px', background: tab==='work' ? '#2563eb' : 'transparent', color: tab==='work' ? 'white' : '#64748b', border:'none' }}>
-          Work ({workUpdates.length})
+          onClick={() => setTab('pool')} 
+          style={{ 
+            flex:1, minHeight:'48px', borderRadius:'12px', border:'none', cursor:'pointer',
+            background: tab==='pool' ? 'white' : 'transparent', 
+            color: tab==='pool' ? 'var(--primary)' : '#64748b',
+            fontWeight: 800, fontSize:'0.9rem', boxShadow: tab==='pool' ? '0 4px 12px rgba(0,0,0,0.05)' : 'none'
+          }}>
+          Task Pool ({pool.length})
         </button>
         <button 
-          onClick={() => setTab('issues')} 
-          className={`btn ${tab==='issues'?'btn-primary':''}`} 
-          style={{ flex:1, minHeight:'44px', background: tab==='issues' ? '#2563eb' : 'transparent', color: tab==='issues' ? 'white' : '#64748b', border:'none' }}>
-          Issues ({issues.length})
+          onClick={() => setTab('claimed')} 
+          style={{ 
+            flex:1, minHeight:'48px', borderRadius:'12px', border:'none', cursor:'pointer',
+            background: tab==='claimed' ? 'white' : 'transparent', 
+            color: tab==='claimed' ? 'var(--primary)' : '#64748b',
+            fontWeight: 800, fontSize:'0.9rem', boxShadow: tab==='claimed' ? '0 4px 12px rgba(0,0,0,0.05)' : 'none'
+          }}>
+          My Claims ({myWork.length})
         </button>
       </div>
 
       {loading ? (
-        [1,2].map(i => <div key={i} className="skeleton" style={{ height:'150px', borderRadius:'20px', marginBottom:'16px' }} />)
-      ) : tab === 'work' ? (
-        workUpdates.length === 0
-          ? <div style={{ textAlign:'center', padding:'80px 20px' }}><ClipboardList size={48} style={{ opacity:0.2, margin:'0 auto 12px' }} /><p>No work updates found</p></div>
-          : workUpdates.map(w => <WorkCard key={w.id} item={w} />)
+        <div className="skeleton" style={{ height:'150px', borderRadius:'20px' }} />
+      ) : tab === 'pool' ? (
+        pool.length === 0
+          ? <div style={{ textAlign:'center', padding:'60px 20px', color:'#94a3b8' }}><ClipboardList size={48} style={{ opacity:0.2, margin:'0 auto 12px' }} /><p>No available tasks in the pool</p></div>
+          : pool.map(w => <WorkCard key={w.id} item={w} onClaim={handleClaim} />)
       ) : (
-        issues.length === 0
-          ? <div style={{ textAlign:'center', padding:'80px 20px' }}><AlertTriangle size={48} style={{ opacity:0.2, margin:'0 auto 12px' }} /><p>No issues reported</p></div>
-          : issues.map(i => <IssueCard key={i.id} item={i} />)
+        myWork.length === 0
+          ? <div style={{ textAlign:'center', padding:'60px 20px', color:'#94a3b8' }}><CheckCircle2 size={48} style={{ opacity:0.2, margin:'0 auto 12px' }} /><p>You haven't claimed any tasks yet</p></div>
+          : myWork.map(w => <WorkCard key={w.id} item={w} onClaim={handleClaim} />)
       )}
     </div>
   )
