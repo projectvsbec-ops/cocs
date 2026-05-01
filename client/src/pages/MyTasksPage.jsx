@@ -30,8 +30,23 @@ function WorkCard({ item, onClaim }) {
   const [imgOpen, setImgOpen] = useState(false)
   const isAvailable = item.workflow_status === 'OPEN'
   
+  const handleFinish = async (id) => {
+    const toastId = toast.loading('Submitting work for review...')
+    try {
+      const { error } = await supabase
+        .from('work_updates')
+        .update({ workflow_status: 'SUBMITTED', claim_status: 'Completed' })
+        .eq('id', id)
+      if (error) throw error
+      toast.success('Work submitted to Admin for verification!', { id: toastId })
+      onClaim() // Re-use the refresh callback
+    } catch (err) {
+      toast.error('Submission failed', { id: toastId })
+    }
+  }
+
   return (
-    <div className="card" style={{ padding:'20px', marginBottom:'16px', borderLeft: isAvailable ? '4px solid #ef4444' : (item.workflow_status === 'REJECTED' ? '4px solid #dc2626' : 'none') }}>
+    <div className="card" style={{ padding:'20px', marginBottom:'16px', borderLeft: isAvailable ? '4px solid #ef4444' : (item.workflow_status === 'CLAIMED' ? '4px solid #2563eb' : (item.workflow_status === 'REJECTED' ? '4px solid #dc2626' : 'none')) }}>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'12px' }}>
         <div>
           <div style={{ fontWeight:800, fontSize:'1.1rem', color:'#1e293b' }}>{item.work_type}</div>
@@ -72,6 +87,16 @@ function WorkCard({ item, onClaim }) {
             className="btn btn-primary" 
             style={{ width:'auto', minHeight:'40px', padding:'0 16px', fontSize:'0.85rem', background:'#2563eb' }}>
             <Hand size={16} /> Manager Claim
+          </button>
+        ) : item.workflow_status === 'CLAIMED' ? (
+          <button 
+            onClick={() => handleFinish(item.id)}
+            className="btn" 
+            style={{ 
+              width:'auto', minHeight:'40px', padding:'0 16px', fontSize:'0.85rem', 
+              background:'#16a34a', color:'white', fontWeight:800, borderRadius:'12px' 
+            }}>
+            <CheckCircle2 size={16} /> Finish & Submit
           </button>
         ) : (
           item.workflow_status === 'REJECTED' && (
