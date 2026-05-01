@@ -70,6 +70,7 @@ export default function AdminDashboardPage() {
   useEffect(() => { loadStats() }, [])
 
   if (loading) return <div className="page fade-in">Loading metrics…</div>
+  if (!stats) return <div className="page fade-in">Failed to load system metrics. Please ensure database migrations are applied.</div>
 
   return (
     <div className="page fade-in">

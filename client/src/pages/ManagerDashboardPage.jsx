@@ -58,6 +58,7 @@ export default function ManagerDashboardPage() {
   useEffect(() => { loadManagerStats() }, [user])
 
   if (loading) return <div className="page fade-in">Loading performance data…</div>
+  if (!stats) return <div className="page fade-in">Failed to load operations data. Please ensure database migrations are applied.</div>
 
   return (
     <div className="page fade-in">
