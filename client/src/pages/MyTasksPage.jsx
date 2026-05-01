@@ -5,8 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { 
   RefreshCw, ClipboardList, AlertTriangle, 
-  Image, Edit3, MessageSquare, UserCheck,
-  Hand, CheckCircle2, MapPin
+  Image, Edit3, MessageSquare, Hand, CheckCircle2, MapPin
 } from 'lucide-react'
 
 function StatusBadge({ status }) {
@@ -26,23 +25,28 @@ function StatusBadge({ status }) {
 
 function WorkCard({ item, onClaim, onUpdate }) {
   const navigate = useNavigate()
-  const { user } = useAuth()
   const [imgOpen, setImgOpen] = useState(false)
   const isAvailable = item.workflow_status === 'OPEN'
   
-  const handleFinish = async (id) => {
+  const handleFinish = async (e) => {
+    e.stopPropagation()
     const toastId = toast.loading('Submitting work for review...')
     try {
       const { error } = await supabase
         .from('work_updates')
         .update({ workflow_status: 'SUBMITTED', claim_status: 'Completed' })
-        .eq('id', id)
+        .eq('id', item.id)
       if (error) throw error
-      toast.success('Work submitted to Admin for verification!', { id: toastId })
-      onUpdate() // Call the refresh function
+      toast.success('Work submitted to Admin!', { id: toastId })
+      onUpdate()
     } catch (err) {
       toast.error('Submission failed', { id: toastId })
     }
+  }
+
+  const triggerClaim = (e) => {
+    e.stopPropagation()
+    onClaim(item.id)
   }
 
   return (
@@ -83,14 +87,14 @@ function WorkCard({ item, onClaim, onUpdate }) {
         
         {isAvailable ? (
           <button 
-            onClick={() => onClaim(item.id)}
+            onClick={triggerClaim}
             className="btn btn-primary" 
             style={{ width:'auto', minHeight:'40px', padding:'0 16px', fontSize:'0.85rem', background:'#2563eb' }}>
             <Hand size={16} /> Manager Claim
           </button>
         ) : item.workflow_status === 'CLAIMED' ? (
           <button 
-            onClick={() => handleFinish(item.id)}
+            onClick={handleFinish}
             className="btn" 
             style={{ 
               width:'auto', minHeight:'40px', padding:'0 16px', fontSize:'0.85rem', 
@@ -121,12 +125,13 @@ function WorkCard({ item, onClaim, onUpdate }) {
 
 export default function MyTasksPage() {
   const { user } = useAuth()
-  const [tab, setTab] = useState('claimed') // 'claimed', 'pool'
+  const [tab, setTab] = useState('claimed')
   const [myWork, setMyWork] = useState([])
   const [pool, setPool] = useState([])
   const [loading, setLoading] = useState(true)
 
   const load = async () => {
+    if (!user) return
     setLoading(true)
     try {
       const [myRes, poolRes] = await Promise.all([
@@ -141,37 +146,32 @@ export default function MyTasksPage() {
           .eq('workflow_status', 'OPEN')
           .order('created_at', { ascending: false })
       ])
-
       setMyWork(myRes.data || [])
       setPool(poolRes.data || [])
     } catch (err) {
-      toast.error('Could not load task data')
+      console.error(err)
     } finally {
       setLoading(false)
     }
   }
 
   const handleClaim = async (id) => {
+    if (!id) return
     const toastId = toast.loading('Claiming task...')
     try {
       const { error } = await supabase
         .from('work_updates')
-        .update({ 
-          user_id: user.id, 
-          workflow_status: 'CLAIMED',
-          claim_status: 'Pending'
-        })
+        .update({ user_id: user.id, workflow_status: 'CLAIMED' })
         .eq('id', id)
-      
       if (error) throw error
-      toast.success('Task Claimed! Moved to your history.', { id: toastId })
+      toast.success('Task Claimed!', { id: toastId })
       load()
     } catch (err) {
       toast.error('Claim failed', { id: toastId })
     }
   }
 
-  useEffect(() => { if (user) load() }, [user])
+  useEffect(() => { load() }, [user])
 
   return (
     <div className="page fade-in">
@@ -186,24 +186,12 @@ export default function MyTasksPage() {
       </div>
 
       <div style={{ display:'flex', gap:'6px', background:'#f1f5f9', borderRadius:'16px', padding:'4px', marginBottom:'24px' }}>
-        <button 
-          onClick={() => setTab('pool')} 
-          style={{ 
-            flex:1, minHeight:'48px', borderRadius:'12px', border:'none', cursor:'pointer',
-            background: tab==='pool' ? 'white' : 'transparent', 
-            color: tab==='pool' ? 'var(--primary)' : '#64748b',
-            fontWeight: 800, fontSize:'0.9rem', boxShadow: tab==='pool' ? '0 4px 12px rgba(0,0,0,0.05)' : 'none'
-          }}>
+        <button onClick={() => setTab('pool')} 
+          style={{ flex:1, minHeight:'48px', borderRadius:'12px', border:'none', background: tab==='pool' ? 'white' : 'transparent', color: tab==='pool' ? 'var(--primary)' : '#64748b', fontWeight: 800 }}>
           Task Pool ({pool.length})
         </button>
-        <button 
-          onClick={() => setTab('claimed')} 
-          style={{ 
-            flex:1, minHeight:'48px', borderRadius:'12px', border:'none', cursor:'pointer',
-            background: tab==='claimed' ? 'white' : 'transparent', 
-            color: tab==='claimed' ? 'var(--primary)' : '#64748b',
-            fontWeight: 800, fontSize:'0.9rem', boxShadow: tab==='claimed' ? '0 4px 12px rgba(0,0,0,0.05)' : 'none'
-          }}>
+        <button onClick={() => setTab('claimed')} 
+          style={{ flex:1, minHeight:'48px', borderRadius:'12px', border:'none', background: tab==='claimed' ? 'white' : 'transparent', color: tab==='claimed' ? 'var(--primary)' : '#64748b', fontWeight: 800 }}>
           My Claims ({myWork.length})
         </button>
       </div>
@@ -212,11 +200,11 @@ export default function MyTasksPage() {
         <div className="skeleton" style={{ height:'150px', borderRadius:'20px' }} />
       ) : tab === 'pool' ? (
         pool.length === 0
-          ? <div style={{ textAlign:'center', padding:'60px 20px', color:'#94a3b8' }}><ClipboardList size={48} style={{ opacity:0.2, margin:'0 auto 12px' }} /><p>No available tasks in the pool</p></div>
+          ? <div style={{ textAlign:'center', padding:'60px' }}><ClipboardList size={48} style={{ opacity:0.1, margin:'0 auto 12px' }} /><p>No available tasks</p></div>
           : pool.map(w => <WorkCard key={w.id} item={w} onClaim={handleClaim} onUpdate={load} />)
       ) : (
         myWork.length === 0
-          ? <div style={{ textAlign:'center', padding:'60px 20px', color:'#94a3b8' }}><CheckCircle2 size={48} style={{ opacity:0.2, margin:'0 auto 12px' }} /><p>You haven't claimed any tasks yet</p></div>
+          ? <div style={{ textAlign:'center', padding:'60px' }}><CheckCircle2 size={48} style={{ opacity:0.1, margin:'0 auto 12px' }} /><p>No claimed tasks</p></div>
           : myWork.map(w => <WorkCard key={w.id} item={w} onClaim={handleClaim} onUpdate={load} />)
       )}
     </div>
