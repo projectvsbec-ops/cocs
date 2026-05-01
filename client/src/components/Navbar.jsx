@@ -40,6 +40,7 @@ export default function Navbar() {
     { to: '/verify',    icon: <CheckSquare size={22} />,  label: 'Verify',    roles: ['Manager','Admin'] },
     { to: '/dashboard', icon: <BarChart2 size={22} />,    label: 'Dashboard', roles: ['Admin','Manager'] },
     { to: '/issues',    icon: <AlertTriangle size={22} />, label: 'Issues',    roles: ['Admin','Manager'] },
+    { to: '/archive',   icon: <Layout size={22} />,       label: 'Archive',   roles: ['Admin'] },
   ].filter(l => l.roles.includes(user?.role))
 
   const isActive = (to) => location.pathname === to

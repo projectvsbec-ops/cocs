@@ -13,6 +13,7 @@ const AdminDashboardPage = lazy(() => import('./pages/AdminDashboardPage'))
 const ManagerDashboardPage = lazy(() => import('./pages/ManagerDashboardPage'))
 const IssuesPage = lazy(() => import('./pages/IssuesPage'))
 const AuditPage = lazy(() => import('./pages/AuditPage'))
+const ArchiveDashboardPage = lazy(() => import('./pages/ArchiveDashboardPage'))
 
 function ProtectedRoute({ children, roles }) {
   const { user, loading } = useAuth()
@@ -63,6 +64,10 @@ export default function App() {
 
           <Route path="/audit/new" element={
             <ProtectedRoute roles={['Admin']}><AuditPage /></ProtectedRoute>
+          } />
+
+          <Route path="/archive" element={
+            <ProtectedRoute roles={['Admin']}><ArchiveDashboardPage /></ProtectedRoute>
           } />
           
           <Route path="/issues" element={
