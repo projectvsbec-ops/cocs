@@ -3,23 +3,21 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../utils/supabaseClient'
 import { useAuth } from '../context/AuthContext'
 import toast from 'react-hot-toast'
-import { ArrowLeft, Search, History, Shield, CheckCircle } from 'lucide-react'
+import { ArrowLeft, Search, History, Shield, CheckCircle, MapPin } from 'lucide-react'
 
 export default function AuditPage() {
   const { user, isAdmin } = useAuth()
   const navigate = useNavigate()
   
-  const [departments, setDepartments] = useState([])
   const [locations, setLocations] = useState([])
   const [history, setHistory] = useState([])
-  const [form, setForm] = useState({ department_id:'', location_id:'', findings:'', score:'' })
+  const [form, setForm] = useState({ location_id:'', findings:'', score:'' })
   const [loading, setLoading] = useState(false)
   const [activeTab, setActiveTab] = useState('new') // 'new' or 'history'
 
   useEffect(() => {
     if (!isAdmin) return
     
-    supabase.from('departments').select('*').order('name').then(({ data }) => setDepartments(data || []))
     supabase.from('locations').select('*').order('name').then(({ data }) => {
       const uniqueLocs = []
       const seen = new Set()
@@ -37,7 +35,7 @@ export default function AuditPage() {
   const loadHistory = async () => {
     const { data } = await supabase
       .from('audits')
-      .select(`*, departments(name), locations(name)`)
+      .select(`*, locations(name)`)
       .order('created_at', { ascending: false })
       .limit(20)
     setHistory(data || [])
@@ -45,7 +43,7 @@ export default function AuditPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!form.department_id) { toast.error('Select a department'); return }
+    if (!form.location_id) { toast.error('Select a location'); return }
     if (!form.findings.trim()) { toast.error('Enter findings'); return }
     
     const scoreVal = parseInt(form.score)
@@ -58,8 +56,7 @@ export default function AuditPage() {
     try {
       const { data: audit, error } = await supabase.from('audits').insert([{
         admin_id: user.id,
-        department_id: form.department_id,
-        location_id: form.location_id || null,
+        location_id: form.location_id,
         findings: form.findings,
         score: scoreVal,
       }]).select().single()
@@ -71,11 +68,11 @@ export default function AuditPage() {
         action_type: 'AUDIT',
         entity_type: 'audit',
         entity_id: audit.id,
-        detail: `Conducted audit for ${departments.find(d => d.id === form.department_id)?.name} (Score: ${scoreVal})`
+        detail: `Conducted audit for ${locations.find(l => l.id === form.location_id)?.name} (Score: ${scoreVal}%)`
       }])
 
       toast.success('✅ Audit recorded successfully!')
-      setForm({ department_id:'', location_id:'', findings:'', score:'' })
+      setForm({ location_id:'', findings:'', score:'' })
       setActiveTab('history')
       loadHistory()
     } catch (err) {
@@ -101,83 +98,92 @@ export default function AuditPage() {
         <ArrowLeft size={18} /> Back
       </button>
 
-      <div style={{ marginBottom:'24px', display:'flex', justifyContent:'space-between', alignItems:'flex-end' }}>
-        <div>
-          <h1 style={{ margin:0, fontSize:'1.6rem', fontWeight:800 }}>🔍 Audit System</h1>
-          <p style={{ margin:'4px 0 0', color:'#64748b' }}>Precision inspections and scoring</p>
-        </div>
+      <div style={{ marginBottom:'24px' }}>
+        <h1 style={{ margin:0, fontSize:'1.6rem', fontWeight:800 }}>🔍 Audit System</h1>
+        <p style={{ margin:'4px 0 0', color:'#64748b', fontWeight: 600 }}>Precision inspections and scoring</p>
       </div>
 
-      <div style={{ display:'flex', gap:'4px', background:'#f1f5f9', padding:'4px', borderRadius:'12px', marginBottom:'24px' }}>
+      <div style={{ display:'flex', gap:'4px', background:'#f1f5f9', padding:'4px', borderRadius:'14px', marginBottom:'24px' }}>
         <button onClick={() => setActiveTab('new')} style={{ 
-          flex:1, padding:'10px', borderRadius:'8px', border:'none', cursor:'pointer',
+          flex:1, padding:'12px', borderRadius:'10px', border:'none', cursor:'pointer',
           background: activeTab === 'new' ? 'white' : 'transparent',
-          fontWeight: activeTab === 'new' ? 700 : 500,
-          boxShadow: activeTab === 'new' ? '0 2px 8px rgba(0,0,0,0.05)' : 'none'
+          fontWeight: activeTab === 'new' ? 800 : 600,
+          boxShadow: activeTab === 'new' ? '0 4px 12px rgba(0,0,0,0.05)' : 'none',
+          color: activeTab === 'new' ? 'var(--primary)' : '#64748b',
+          transition: 'all 0.2s'
         }}>New Inspection</button>
         <button onClick={() => setActiveTab('history')} style={{ 
-          flex:1, padding:'10px', borderRadius:'8px', border:'none', cursor:'pointer',
+          flex:1, padding:'12px', borderRadius:'10px', border:'none', cursor:'pointer',
           background: activeTab === 'history' ? 'white' : 'transparent',
-          fontWeight: activeTab === 'history' ? 700 : 500,
-          boxShadow: activeTab === 'history' ? '0 2px 8px rgba(0,0,0,0.05)' : 'none'
+          fontWeight: activeTab === 'history' ? 800 : 600,
+          boxShadow: activeTab === 'history' ? '0 4px 12px rgba(0,0,0,0.05)' : 'none',
+          color: activeTab === 'history' ? 'var(--primary)' : '#64748b',
+          transition: 'all 0.2s'
         }}>Audit History</button>
       </div>
 
       {activeTab === 'new' ? (
-        <form onSubmit={handleSubmit} className="card" style={{ padding:'24px', display:'flex', flexDirection:'column', gap:'20px' }}>
-          <div className="grid-2">
-            <div>
-              <label className="form-label">🏢 Target Department *</label>
-              <select className="form-input" value={form.department_id} onChange={e => setForm({ ...form, department_id: e.target.value })}>
-                <option value="">-- Select --</option>
-                {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="form-label">📍 Specific Location</label>
-              <select className="form-input" value={form.location_id} onChange={e => setForm({ ...form, location_id: e.target.value })}>
-                <option value="">-- Optional --</option>
-                {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
-              </select>
-            </div>
+        <form onSubmit={handleSubmit} className="card" style={{ padding:'24px', display:'flex', flexDirection:'column', gap:'24px' }}>
+          <div>
+            <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <MapPin size={16} color="var(--danger)" /> SPECIFIC LOCATION *
+            </label>
+            <select className="form-input" value={form.location_id} onChange={e => setForm({ ...form, location_id: e.target.value })}>
+              <option value="">-- Select Location --</option>
+              {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+            </select>
           </div>
 
           <div>
-            <label className="form-label">📋 Findings & Remarks *</label>
-            <textarea className="form-input" rows={6} placeholder="Describe the current state, violations, or improvements..." value={form.findings} onChange={e => setForm({ ...form, findings: e.target.value })} />
+            <label className="form-label">📋 FINDINGS & REMARKS *</label>
+            <textarea 
+              className="form-input" 
+              rows={5} 
+              style={{ borderRadius: '16px', padding: '16px' }}
+              placeholder="Describe the current state, violations, or improvements..." 
+              value={form.findings} 
+              onChange={e => setForm({ ...form, findings: e.target.value })} 
+            />
           </div>
 
           <div>
-            <label className="form-label">🏅 Performance Score (0-100) *</label>
+            <label className="form-label">🏅 PERFORMANCE SCORE (0-100) *</label>
             <div style={{ display:'flex', alignItems:'center', gap:'16px' }}>
-              <input type="number" className="form-input" style={{ width:'120px' }} value={form.score} onChange={e => setForm({ ...form, score: e.target.value })} placeholder="0-100" />
-              {form.score && (
-                <div style={{ flex:1, height:'12px', background:'#e2e8f0', borderRadius:'6px', overflow:'hidden' }}>
-                  <div style={{ height:'100%', width:`${score}%`, background: scoreColor, transition:'width 0.4s' }} />
-                </div>
-              )}
+              <input 
+                type="number" 
+                className="form-input" 
+                style={{ width:'100px', textAlign: 'center', fontWeight: 800 }} 
+                value={form.score} 
+                onChange={e => setForm({ ...form, score: e.target.value })} 
+                placeholder="0-100" 
+              />
+              <div style={{ flex:1, height:'12px', background:'#f1f5f9', borderRadius:'6px', overflow:'hidden' }}>
+                <div style={{ height:'100%', width:`${score}%`, background: scoreColor, transition:'width 0.5s cubic-bezier(0.4, 0, 0.2, 1)' }} />
+              </div>
             </div>
           </div>
 
-          <button type="submit" className="btn btn-primary" disabled={loading} style={{ background:'#d97706', border:'none', height:'60px' }}>
+          <button type="submit" className="btn btn-primary" disabled={loading} style={{ background:'linear-gradient(135deg, #d97706, #b45309)', border:'none', height:'64px', borderRadius: '20px', boxShadow: '0 10px 20px rgba(217, 119, 6, 0.2)' }}>
             {loading ? 'Submitting Report…' : <><CheckCircle size={20} /> Certify & Submit Audit</>}
           </button>
         </form>
       ) : (
-        <div style={{ display:'flex', flexDirection:'column', gap:'12px' }}>
+        <div style={{ display:'flex', flexDirection:'column', gap:'14px' }}>
           {history.map(a => (
-            <div key={a.id} className="card" style={{ padding:'16px' }}>
-              <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'8px' }}>
-                <span style={{ fontWeight:800, fontSize:'1rem' }}>{a.departments?.name}</span>
+            <div key={a.id} className="card" style={{ padding:'20px', border:'1px solid #f1f5f9' }}>
+              <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'12px', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 800, fontSize: '1.05rem', color: '#1e293b' }}>
+                  <MapPin size={18} color="#64748b" /> {a.locations?.name || 'Global'}
+                </div>
                 <span style={{ 
-                  padding:'4px 8px', borderRadius:'6px', background: a.score >= 80 ? '#dcfce7' : '#fee2e2',
-                  color: a.score >= 80 ? '#16a34a' : '#dc2626', fontWeight:800, fontSize:'0.8rem'
+                  padding:'6px 12px', borderRadius:'10px', background: a.score >= 80 ? '#dcfce7' : a.score >= 50 ? '#fef9c3' : '#fee2e2',
+                  color: a.score >= 80 ? '#16a34a' : a.score >= 50 ? '#d97706' : '#dc2626', fontWeight:900, fontSize:'0.85rem'
                 }}>{a.score}%</span>
               </div>
-              <div style={{ fontSize:'0.85rem', color:'#64748b', marginBottom:'8px' }}>
-                📍 {a.locations?.name || 'All Locations'} • 📅 {new Date(a.created_at).toLocaleDateString()}
+              <div style={{ fontSize:'0.8rem', color:'#94a3b8', fontWeight: 700, marginBottom:'12px' }}>
+                📅 {new Date(a.created_at).toLocaleDateString()} • {new Date(a.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </div>
-              <div style={{ fontSize:'0.9rem', color:'#475569', lineClamp:2, overflow:'hidden', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical' }}>
+              <div style={{ fontSize:'0.9rem', color:'#475569', lineHeight: 1.5 }}>
                 {a.findings}
               </div>
             </div>
