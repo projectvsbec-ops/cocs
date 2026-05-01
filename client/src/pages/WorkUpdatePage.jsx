@@ -22,8 +22,9 @@ export default function WorkUpdatePage() {
     work_type: '', 
     claim_status: 'Pending', 
     notes: '',
-    workflow_status: 'SUBMITTED'
+    workflow_status: isAdmin ? 'OPEN' : 'SUBMITTED'
   })
+  const [postAsOpen, setPostAsOpen] = useState(isAdmin)
   const [photo, setPhoto] = useState(null)
   const [preview, setPreview] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -156,6 +157,27 @@ export default function WorkUpdatePage() {
           }}>
             <div style={{ fontWeight:800, fontSize:'0.85rem', textTransform:'uppercase' }}>Rejected Status</div>
             <div style={{ fontSize:'0.9rem' }}>💬 Feedback: {existingRecord.verify_comment || 'No comment provided'}</div>
+          </div>
+        )}
+
+        {/* Admin Task Posting Toggle */}
+        {isAdmin && !id && (
+          <div className="card" style={{ padding:'20px', background:'#eff6ff', border:'1px solid #dbeafe' }}>
+            <label style={{ display:'flex', alignItems:'center', gap:'12px', cursor:'pointer' }}>
+              <input 
+                type="checkbox" 
+                checked={postAsOpen} 
+                onChange={(e) => {
+                  setPostAsOpen(e.target.checked)
+                  setForm({ ...form, workflow_status: e.target.checked ? 'OPEN' : 'SUBMITTED' })
+                }}
+                style={{ width:'20px', height:'20px' }}
+              />
+              <div>
+                <div style={{ fontWeight:800, color:'#1e40af' }}>Post as Open Task (Task Pool)</div>
+                <div style={{ fontSize:'0.8rem', color:'#60a5fa' }}>Allow any Manager to claim and complete this work</div>
+              </div>
+            </label>
           </div>
         )}
 
